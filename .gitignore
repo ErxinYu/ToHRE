@@ -2,5 +2,4 @@ checkpoint/
 data/
 __pycache__/
 test_result/
-config/
 raw_data/

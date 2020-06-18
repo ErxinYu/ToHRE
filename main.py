@@ -8,7 +8,6 @@ from sklearn.metrics import average_precision_score
 import sys
 import os
 import argparse
-from PCNN_MAXIUM import PCNN_MAXIUM
 from PCNN_ATT import PCNN_ATT
 import os
 import pickle
