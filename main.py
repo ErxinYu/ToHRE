@@ -23,6 +23,7 @@ from tqdm import tqdm
 from model import Policy
 from tree import Tree
 import sklearn.metrics
+hello
 
 def calc_sl_loss(probs, update=True):
     y_true = conf.batch_label
