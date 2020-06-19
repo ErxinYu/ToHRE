@@ -55,28 +55,28 @@ class Policy(nn.Module):
         #states_embed = self.dropout(states_embed)
         if self.conf.use_l2: #true
             h1 = F.relu(self.l1(states_embed)) #  [batch, 300] = [batch, 740] * [740, 300]
-            h2 = F.relu(self.l2(h1))
+            h2 = F.relu(self.l2(h1)) #[batch, 50] = [batch, 300] * [300, 50]
         else:
             h2 = F.relu(self.l1(states_embed))
         h2 = h2.unsqueeze(-1)  # (batch, 50, 1）
-        probs = torch.bmm(next_classes_embed, h2).squeeze(-1) + nb #[batch,8]     [batch,8,50](8是当前批次子标签最大个数)  [batch,50,1] == [batch, 8 ,1].squeeze(-1)
-        #torch.bmmm是batch matrix multiply: torch a.size()=[batch,a,b] b.size()=[batch,b,d] torch.bmm(a,b)=[batch,a,d]
+        probs = torch.bmm(next_classes_embed, h2).squeeze(-1) + nb #[batch,8]     [batch,8,50](8是当前批次子标签最大个数)  [batch,8,1] == [batch, 8 ,1].squeeze(-1)
         return probs
     
-
-
-
     def duplicate_bag_vec(self, indices):#输入bathch中的id，返回bag_vec
+        # if self.conf.cur_layer == 1:
+        #     print("self.bag_vec_layer1_before", self.bag_vec_layer1[0], self.bag_vec_layer1.size())
+    
         self.bag_vec_layer0 = self.bag_vec_layer0[indices]
         self.bag_vec_layer1 = self.bag_vec_layer1[indices]
         self.bag_vec_layer2 = self.bag_vec_layer2[indices]
+
         if self.conf.cur_layer == 0:
             self.bag_vec = self.bag_vec_layer0
         elif self.conf.cur_layer == 1:
             self.bag_vec = self.bag_vec_layer1
+            #print("self.bag_vec_layer1_after", self.bag_vec_layer1[0], self.bag_vec_layer1.size())
         elif self.conf.cur_layer == 2:
             self.bag_vec = self.bag_vec_layer2
-
 
     def generate_logits(self, conf, cur_class_batch, next_classes_batch):#输入[batch,tokens],[batch,cur_class_batch],[batch,max_choices],返回[batch,max_choices_logits]
         # print("cur_class_batch")
@@ -109,6 +109,8 @@ class Policy(nn.Module):
             #weight = torch.from_numpy(weight).cuda().long()
             #print("next_classes_batch_label", next_classes_batch_label, len(next_classes_batch_label))
             # print("weight", weight, len(weight))
+            # print("cur_size", cur_size, self.conf.cur_layer)
+            # print("cur_batch_size", cur_batch_size, self.conf.cur_layer)
             y_true = Variable(torch.from_numpy(next_classes_batch_true)).long().cuda()
             if conf.use_label_weight:
                 loss = self.criterion(probs, y_true)
@@ -118,9 +120,22 @@ class Policy(nn.Module):
                 self.sl_loss += loss
             else:
                 loss = self.criterion_all(probs, y_true)
-                self.sl_loss += (loss * cur_size / cur_batch_size)
+                # print("loss", loss, (loss * cur_size / cur_batch_size), self.conf.cur_layer)
 
+                #self.sl_loss += (loss * cur_size / cur_batch_size)
+                self.sl_loss += (loss * cur_size / cur_batch_size)
         return torch.softmax(probs, dim=1)
+
+
+
+
+
+
+
+
+
+
+
 
     def forward_test(self, cur_class_batch, next_classes_batch):#详细介绍
         #输入这个批次的现在的标签，以及能产生的所有标签，state_embed在一个batch内是一样的
@@ -150,8 +165,7 @@ class Policy(nn.Module):
         else:
             h2 = F.relu(self.l1(states_embed))# (batch, mc, 50)
         h2 = h2.permute(0,2,1)
-        probs = torch.bmm(next_classes_embed, h2) + nb #[batch,8]    [batch,8,8] = [batch, mc, 50] * [batch, 50, mc]
-        #torch.bmmm是batch matrix multiply: torch a.size()=[batch,a,b] b.size()=[batch,b,d] torch.bmm(a,b)=[batch,a,d]
+        probs = torch.bmm(next_classes_embed, h2) + nb #[batch,mc,mc]    [batch,8,8] = [batch, mc, 50] * [batch, 50, mc]
         return probs
 
     def step_sl_test(self, conf, cur_class_batch, next_classes_batch):
@@ -160,24 +174,25 @@ class Policy(nn.Module):
         next_classes_batch = Variable(torch.from_numpy(next_classes_batch)).cuda() #[batch,max_choices]
         probs = self.forward_test(cur_class_batch, next_classes_batch)
         probs = probs.permute(0,2,1)
-        probs = F.softmax(probs, 2)
+        probs = F.softmax(probs, 2) 
         probs = torch.diagonal(probs, offset=0, dim1=1, dim2=2) #[batch, 8, 1]
+
         return probs 
 
     def get_test_bag_vec(self, next_classes_batch, indices):#输入bathch中的id，返回bag_vec
 
-        #input: self.bag_vec_test-[160,96,690]    next_classes_batch-[160,8]        
+        #input: self.bag_vec_test-[160,95,690]    next_classes_batch-[160,8]    #indices [160] [1280] [5440]    
         #output: self.bac_vec-[160,8,690]
 
 
-        self.bag_vec_test = self.bag_vec_test[indices]
-        #print("next_classes_batch", next_classes_batch, len(next_classes_batch), "cur_layer", self.conf.cur_layer)
-        #print("self.bag_vec_test", self.bag_vec_test, self.bag_vec_test.size())
+        self.bag_vec_test = self.bag_vec_test[indices] #[160,95,690]
+        # print("next_classes_batch", next_classes_batch, len(next_classes_batch), "cur_layer", self.conf.cur_layer)
+        # print("self.bag_vec_test", self.bag_vec_test[0], self.bag_vec_test.size())
         indices = torch.from_numpy(next_classes_batch).long().cuda() #[160,8]
         dummy = indices.unsqueeze(2).expand(indices.size(0), indices.size(1), self.bag_vec_test.size(2)) 
-        #print("dummy", dummy, dummy.size()) #[batch_selected, mc, ]
-        self.bag_vec = torch.gather(self.bag_vec_test, 1, dummy)
-        #print("bag_vec", self.bag_vec, self.bag_vec.size())
+        # print("dummy", dummy, dummy.size()) #[batch_selected, mc, 690]
+        self.bag_vec = torch.gather(self.bag_vec_test, 1, dummy) #[160,8,690] [160,mc,690]
+        #print("bag_vec", self.bag_vec.size())
         #print("self.bag_vec_test[1,1,:]",self.bag_vec_test[2,3,:])
         # print("self.bag_vec_test", self.bag_vec_test, self.bag_vec_test.size())
         # print("indices", indices, indices.size())

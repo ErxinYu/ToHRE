@@ -219,3 +219,17 @@ print("word_repre_final", word_repre_final.size())
         print("len(word_repre)", len(word_repre))
 
         exit()
+
+
+
+    # def test(self, x):
+    #   attention_logit = self._attention_test_logit(x) #[all_sen_num, 53]
+    #   tower_output = []
+    #   for i in range(len(self.scope) - 1):
+    #       sen_matrix = x[self.scope[i] : self.scope[i + 1]]
+    #       attention_score = F.softmax(torch.transpose(attention_logit[self.scope[i] : self.scope[i + 1]], 0, 1), 1) #[53,bag_sen_num]
+    #       final_repre = torch.matmul(attention_score, sen_matrix) #[53, 690] = [53,bag_sen_num] * [bag_sen_num, 690]
+    #       probs = self.get_logits(final_repre) #[53,53]
+    #       tower_output.append(torch.diag(F.softmax(probs, 1)))#[1,53]
+    #   stack_output = torch.stack(tower_output)
+    #   return list(stack_output.data.cpu().numpy())

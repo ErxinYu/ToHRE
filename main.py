@@ -23,7 +23,7 @@ from tqdm import tqdm
 from model import Policy
 from tree import Tree
 import sklearn.metrics
-hello
+
 
 def calc_sl_loss(probs, update=True):
     y_true = conf.batch_label
@@ -33,7 +33,7 @@ def calc_sl_loss(probs, update=True):
 def forward_step_sl():#详细介绍
 
     # TODO can reuse logits
-    logits_layers, logits_total, flat_probs = policy.base_model()#[64,53] 每个flat关系的概率 here1
+    logits_layers, logits_total, flat_probs = policy.base_model()#logits_layers: tensor( laye_0‘s (batch, 690), laye_1‘s (batch, 690),laye_2‘s (batch, 690))
     if conf.global_ratio > 0:
         global_loss = calc_sl_loss(flat_probs, update=False)#一个tensor单值 在论文中就是flat_loss
     else:
@@ -45,6 +45,9 @@ def forward_step_sl():#详细介绍
         return global_loss, flat_probs
 
     policy.bag_vec_layer0 = logits_layers[0]
+
+    #print("policy.bag_vec_layer0", policy.bag_vec_layer0.size())
+    
     policy.bag_vec_layer1 = logits_layers[1]
     policy.bag_vec_layer2 = logits_layers[2]
     # policy.bag_vec = logits
@@ -52,11 +55,12 @@ def forward_step_sl():#详细介绍
     cur_batch_size = len(bag_ids) #一般都是64
     cur_class_batch = np.zeros(cur_batch_size, dtype=int)
     for layer in range(conf.n_layers):#3
+        
         conf.cur_layer = layer
-        #print("cur_class_batch", cur_class_batch, len(cur_class_batch), "layer", layer)
-        next_classes_batch = tree.p2c_batch(cur_class_batch)#[batch,上一阶段标签的子标签]，可以看成第n层及他之前的标签
-        #print("next_classes_batch", next_classes_batch, next_classes_batch[0], len(next_classes_batch), "layer", layer)
+        next_classes_batch = tree.p2c_batch(cur_class_batch)#[batch,上一阶段标签的子标签]，可以看成第n层及他之前的标
         next_classes_batch_true, indices, next_class_batch, bag_ids = tree.get_next(cur_class_batch, next_classes_batch, bag_ids)# next_class_batch_true和indices都是相对位置
+        # print("cur_class_batch_all", cur_class_batch, len(cur_class_batch), "layer", layer)
+        # print("next_classes_batch_all", next_classes_batch, next_classes_batch[0], len(next_classes_batch), "layer", layer)
         # print("next_classes_batch_true", next_classes_batch_true, len(next_classes_batch_true), "layer", layer)
         # print("indices", indices, len(indices), "layer", layer)
         # print("next_class_batch", next_class_batch, len(next_class_batch), "layer", layer)
@@ -66,7 +70,10 @@ def forward_step_sl():#详细介绍
         policy.duplicate_bag_vec(indices)
         cur_class_batch = cur_class_batch[indices]
         next_classes_batch = next_classes_batch[indices]
-        #print("policy.bag_vec", policy.bag_vec, policy.bag_vec.size(), "layer", layer)
+
+        # print("cur_class_batch_selected", cur_class_batch, len(cur_class_batch), "layer", layer)
+        # print("next_classes_batch_selected", next_classes_batch, next_classes_batch[0], len(next_classes_batch), "layer", layer)
+        # print("policy.bag_vec", policy.bag_vec, policy.bag_vec.size(), "layer", layer)
         probs = policy.step_sl(conf, cur_class_batch, next_classes_batch, next_classes_batch_true)#加入local_loss
         cur_class_batch = next_class_batch
 
@@ -106,6 +113,7 @@ def cal_train_one_step_flat(probs):
             conf.acc_not_NA_global.add(conf.batch_label[i] == prediction)
         conf.acc_total_global.add(conf.batch_label[i] == prediction)
 def train():
+    print("Star train model ", conf.out_model_name)
     conf.set_train_model(policy.base_model)
     best_auc = 0.0
     best_p = None
@@ -157,14 +165,14 @@ def train():
             print('Train Epoch ' + str(epoch) + ' has finished')
             test_epoch_by_all(epoch)
             print('Saving model...\n')
-            torch.save(policy.state_dict(), "./checkpoint/word_epoch" + str(epoch))
+            torch.save(policy.state_dict(), "./checkpoint/" + conf.out_model_name + "_epoch_" + str(epoch))
     print("Finish training")
     print("Best epoch = %d | auc = %f" % (best_epoch, best_auc))
     print("Storing best result...")
 def test_epoch_by_all(epoch):
     
     # set test model
-    model_file = "./checkpoint/word_epoch" + str(epoch)
+    model_file = "./checkpoint/" + conf.out_model_name + "_epoch_" +str(epoch)
     print('Test local: test_epoch_by_all model  ' + model_file)
     if not conf.is_training:
         policy.load_state_dict(torch.load(model_file))  
@@ -203,19 +211,35 @@ def test_epoch_by_all(epoch):
         #     over += 1
         #     continue
         conf.test_one_step()
-        logits = policy.base_model.test_hierarchical() #[160,96,690]
+        logits = policy.base_model.test_hierarchical() #[160,95,690]
         policy.bag_vec_test = logits
         bag_ids = conf.bag_ids
         cur_batch_size = len(bag_ids)
         cur_class_batch = np.zeros(cur_batch_size, dtype=int)
         indices = torch.from_numpy(np.array(range(len(bag_ids)))).cuda()
         for layer in range(conf.n_layers):#3
+            #cur_class_batch    [0,0,...0]--(160)       [5,....,6,...,]--(1280)             [70,...,71,...]--(5440)
+            #indices            [0,1,2...159]--(160)    [0,...,1,...,2...,]--(1280)         [0,...,1,...2...]--(5440)
+            #bag_ids            [bag_id0,...]--(160)    [bag_id0,...,bag_id1,...]--(1280)   [bag_id0,...,bag_id1,...]--(5440)
+            #next_classes_batch [160,8]                 [1280,15]                           [5440,7]
+            #self.bag_vec       [160,8,690]             [1280,15,690]                       [5440,7,690]
+            #h_probs            [160,8]                 [1280,15]                           [5440,7]
+            
             conf.cur_layer = layer
-            next_classes_batch = tree.p2c_batch(cur_class_batch)#[batch,mc]
-            policy.get_test_bag_vec(next_classes_batch, indices) #根据next_classes_batch选择 self.bag_vec 
-            h_probs = policy.step_sl_test(conf, cur_class_batch, next_classes_batch)
-            h_probs_np = h_probs.cpu().detach().numpy()                
 
+            next_classes_batch = tree.p2c_batch(cur_class_batch)#[batch,mc] [160,8] 
+
+            policy.get_test_bag_vec(next_classes_batch, indices) #根据next_classes_batch选择 self.bag_vec = [160,8,690] 
+            h_probs = policy.step_sl_test(conf, cur_class_batch, next_classes_batch)
+            h_probs_np = h_probs.cpu().detach().numpy()      
+            # print("cur_class_batch", cur_class_batch.shape, cur_class_batch[:300], "layer", layer) #[160]
+            # print("indices", indices.shape, indices[:300], "layer", layer)
+            # print("bag_ids", len(bag_ids), bag_ids[:300],  "layer", layer)
+            # print("next_classes_batch", next_classes_batch[0], next_classes_batch.shape, "layer", layer)  
+            # print("h_probs", h_probs[0], h_probs.size(), "layer", layer)            
+            
+           
+            # print("bag_ids", bag_ids, len(bag_ids), "layer", layer)
             for i, var in enumerate(indices):
                 y_pred_classes = next_classes_batch[i]
                 y_true = tree.test_hierarchical_bag_label[bag_ids[i]] #list which is label
@@ -230,8 +254,11 @@ def test_epoch_by_all(epoch):
                 break    
             bag_ids = [bag_ids[idx] for idx in indices]
             cur_class_batch = next_class_batch_pred
+        # exit()
+
+
     print("over", over)
-    file_name = "./test_result/word_epoch" + str(epoch) + ".json"
+    file_name = "./test_result/" + conf.out_model_name + "_epoch_" + str(epoch) + ".json"
     with open(file_name, "w") as file:
         json.dump(bagid_label2prob_dict, file)
     torch.cuda.empty_cache() #清空显存
@@ -328,26 +355,28 @@ def test():
     print("Storing best result...")
     if not os.path.isdir(conf.test_result_dir):
         os.mkdir(conf.test_result_dir)
-    np.save(os.path.join(conf.test_result_dir, 'HRE_wo_weight_x.npy'), best_p)
-    np.save(os.path.join(conf.test_result_dir, 'HRE_wo_weight_y.npy'), best_r)
+    best_out_file_x = conf.out_model_name + "_best_epoch_" + str(best_epoch) + "_x.npy"
+    best_out_file_y = conf.out_model_name + "_best_epoch_" + str(best_epoch) + "_y.npy"
+    np.save(os.path.join(conf.test_result_dir, best_out_file_x), best_p)
+    np.save(os.path.join(conf.test_result_dir, best_out_file_y), best_r)
 
-    file_name = "./test_result/epoch_" + str(epoch) + ".txt"
-    file_name_1 = "./test_result/epoch_p" + str(best_epoch) + ".txt"
-    file_name_2 = "./test_result/epoch_n" + str(best_epoch) + ".txt"
-    with open(file_name, "w") as file, open(file_name_1, "w") as file1, open(file_name_2, "w") as file2:
+    file_name_all = "./test_result/best_epoch_" + str(best_epoch) + "_all" + ".txt"
+    file_name_pos = "./test_result/best_epoch_" + str(best_epoch) + "_pos" + ".txt"
+    file_name_neg = "./test_result/best_epoch_" + str(best_epoch) + "_neg" +".txt"
+    with open(file_name_all, "w") as file_all, open(file_name_pos, "w") as file_pos, open(file_name_neg, "w") as file_neg:
         for i in tqdm(range(len(best_test_result))):
             best_test_result[i].append(i)
-            print(best_test_result[i], file = file)
+            print(best_test_result[i], file = file_all)
             if best_test_result[i][0] == 1:
-                print(best_test_result[i], file = file1)   
+                print(best_test_result[i], file = file_pos)   
             else:
-                print(test_result[i], file = file2)
+                print(test_result[i], file = file_neg)
     print("Finish storing")
 
 def test_json(epoch):
     print(len(conf.test_batch_attention_query))
     print("\nstart test epoch %d "%(epoch))
-    file_name = "./test_result/bagid_label2prob_lr0.4_wo_weight_epoch" + str(epoch)+ ".json"
+    file_name = "./test_result/" + conf.out_model_name + "_epoch_" + str(epoch)+ ".json"
     with open(file_name, "r") as file:
         bagid_label2prob_dict = json.load(file)
     print("read file from ", file_name)

@@ -188,7 +188,9 @@ class PCNN(nn.Module):
 	def forward(self, embedding):
 		embedding = torch.unsqueeze(embedding, dim = 1) #[241,1,120,60]
 		x = self.cnn(embedding) #[241,300,120,1]
+		# print("encoder cnn x", x.size())
 		x = self.pooling(x, self.mask, self.config.hidden_size) #[241, 690]
+		# print("encoder pooling x", x.size())
 		return self.activation(x)
 
 class _CNN(nn.Module):

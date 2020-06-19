@@ -107,7 +107,7 @@ class Tree:
         bag_ids = [bag_ids[idx] for idx in indices]
         return next_classes_batch_true, indices.tolist(), next_class_batch, bag_ids
         
-    def get_next_all(self, cur_class_batch, next_classes_batch, bag_ids):#详细介绍
+    def get_next_all(self, cur_class_batch, next_classes_batch, bag_ids):
         assert len(cur_class_batch) == len(bag_ids)
         next_class_batch_pred = []
         indices = []

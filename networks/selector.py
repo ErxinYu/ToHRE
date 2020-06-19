@@ -11,7 +11,7 @@ class Selector(nn.Module):
 		self.config = config
 		self.relation_matrix = nn.Embedding(self.config.flat_num_classes, relation_dim *3) 
 		self.bias = nn.Parameter(torch.Tensor(self.config.flat_num_classes))
-		self.attention_matrix = nn.Embedding(self.config.global_num_classes, relation_dim)
+		self.attention_matrix = nn.Embedding(self.config.global_num_classes, relation_dim) #[95,690]
 		self.init_weights()
 		self.scope = None
 		self.attention_query = None
@@ -151,10 +151,13 @@ class Attention(Selector):
 	def _attention_test_logit(self, x):
 		attention_logit = torch.matmul(x, torch.transpose(self.attention_matrix.weight, 0, 1)) #[all_sen_num, 95] = [all_sen_num, 690] * [690, 95]
 		return attention_logit
-	def forward(self, x):
+	def forward(self, x): #[all_sen_num, 690]
+		#print("selector x",x.size())
 		logits_layers = []
+		logits_total = None
+		probs =None
 		for layer in range(3):
-			attention_logit = self._attention_train_logit(x,layer) #[all_sen_num, 1]
+			attention_logit = self._attention_train_logit(x, layer) #[all_sen_num, 1]
 			tower_repre = []
 			for i in range(len(self.scope) - 1):
 				sen_matrix = x[self.scope[i] : self.scope[i + 1]]
@@ -162,23 +165,13 @@ class Attention(Selector):
 				final_repre = torch.squeeze(torch.matmul(attention_score, sen_matrix))# [1, bag_sen_num] * [bag_sen_num, 690]
 				tower_repre.append(final_repre) #[1, 690]
 			stack_repre_layer = torch.stack(tower_repre) #[batch, 690]
-			logits_layers.append(stack_repre_layer)  #[laye_0‘s [batch, 690], laye_1‘s [batch, 690],laye_2‘s [batch, 690]]
-		stack_logits_layers = torch.stack(logits_layers)
-		logits_total = torch.cat(logits_layers, 1)
-		logits_total = self.dropout(logits_total)
-		probs = self.get_logits(logits_total)
+			logits_layers.append(stack_repre_layer)  #[laye_0‘s (batch, 690), laye_1‘s (batch, 690),laye_2‘s (batch, 690)]
+		stack_logits_layers = torch.stack(logits_layers) #list 变tensor.  tensor( laye_0‘s (batch, 690), laye_1‘s (batch, 690),laye_2‘s (batch, 690))
+		if self.config.global_ratio > 0:
+			logits_total = torch.cat(logits_layers, 1)
+			logits_total = self.dropout(logits_total)
+			probs = self.get_logits(logits_total)
 		return stack_logits_layers, logits_total, probs
-	# def test(self, x):
-	# 	attention_logit = self._attention_test_logit(x)	#[all_sen_num, 53]
-	# 	tower_output = []
-	# 	for i in range(len(self.scope) - 1):
-	# 		sen_matrix = x[self.scope[i] : self.scope[i + 1]]
-	# 		attention_score = F.softmax(torch.transpose(attention_logit[self.scope[i] : self.scope[i + 1]], 0, 1), 1) #[53,bag_sen_num]
-	# 		final_repre = torch.matmul(attention_score, sen_matrix) #[53, 690] = [53,bag_sen_num] * [bag_sen_num, 690]
-	# 		probs = self.get_logits(final_repre) #[53,53]
-	# 		tower_output.append(torch.diag(F.softmax(probs, 1)))#[1,53]
-	# 	stack_output = torch.stack(tower_output)
-	# 	return list(stack_output.data.cpu().numpy())
 
 	def test_flat(self, x):
 		attention_logit = self._attention_test_logit(x)	#[all_sen_num, 95]
@@ -203,7 +196,7 @@ class Attention(Selector):
 		return list(stack_output.data.cpu().numpy())
 
 	def test_hierarchical(self, x): #x = [all_sen_num,690]
-		attention_logit = self._attention_test_logit(x)	#[all_sen_num, 95]
+		attention_logit = self._attention_test_logit(x)	#[all_sen_num, 95]	
 		tower_repre = []
 		for i in range(len(self.scope) - 1):
 			sen_matrix = x[self.scope[i] : self.scope[i + 1]] #[bag_sen_num, 690]

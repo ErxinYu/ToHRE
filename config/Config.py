@@ -45,7 +45,7 @@ class Config(object):
 		self.max_length = 120
 		self.pos_num = 2 * self.max_length
 		self.flat_num_classes = 53
-		self.hidden_size = 300
+		self.hidden_size = 230
 		self.da = 150
 		self.pos_size = 5
 		self.max_epoch = 200
@@ -87,10 +87,11 @@ class Config(object):
 		self.pred_not_na = 0
 		self.global_num_classes = 95
 
-		self.is_training = True
+		self.is_training = False
 		self.flat_probs_only = False
 		self.global_ratio = 0
 		self.use_label_weight = False
+		self.out_model_name = "HRE"
 		self.gpu = "0"
 
 
