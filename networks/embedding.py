@@ -14,6 +14,8 @@ class Embedding(nn.Module):
 		self.pos2_embedding = nn.Embedding(self.config.pos_num, self.config.pos_size, padding_idx = 0)
 		self.init_word_weights()
 		self.init_pos_weights()
+		self.h_entity_word = None
+		self.t_entity_word = None
 		self.word = None
 		self.pos1 = None
 		self.pos2 = None
@@ -29,12 +31,36 @@ class Embedding(nn.Module):
 		if self.pos2_embedding.padding_idx is not None:
 			self.pos2_embedding.weight.data[self.pos2_embedding.padding_idx].fill_(0)
 	def forward(self):
-		# print("word", self.word.size())
-		# print("pos1", self.pos1.size())
-		# print("pos2", self.pos2.size())
-		# exit()
-		word = self.word_embedding(self.word)
-		pos1 = self.pos1_embedding(self.pos1)
-		pos2 = self.pos2_embedding(self.pos2)
+		word = self.word_embedding(self.word)	#[160,120,50]
+		pos1 = self.pos1_embedding(self.pos1) #[160,120,5]
+		pos2 = self.pos2_embedding(self.pos2) #[160,120,5]
 		embedding = torch.cat((word, pos1, pos2), dim = 2) #[160,120,60]
+		return embedding
+	def forward_new(self):
+
+		print("word", self.word.size(), self.word[100])
+		print("pos1", self.pos1.size(), self.pos1[100])
+		print("pos2", self.pos2.size(), self.pos2[100])
+		print("h_entity", self.h_entity_word.size(), self.h_entity_word[100])
+		print("t_entity", self.t_entity_word.size(), self.t_entity_word[100])
+		
+
+		word = self.word_embedding(self.word)	#[160,120,50]
+		h_entity_word = self.word_embedding(self.h_entity_word)	#[160,1,50]
+		t_entity_word = self.word_embedding(self.t_entity_word) #[160,1,50]
+		h_entity_word = h_entity_word.expand(-1,120,50) #[160,120,50]
+		t_entity_word = t_entity_word.expand(-1,120,50) #[160,120,50]
+		pos1 = self.pos1_embedding(self.pos1) #[160,120,5]
+		pos2 = self.pos2_embedding(self.pos2) #[160,120,5]
+
+		print("word", word.size())
+		print("pos1", pos1.size())
+		print("pos2", pos2.size(), self.pos2[100])
+		print("h_entity", h_entity_word.size(), self.h_entity_word[100])
+		print("t_entity", t_entity_word.size(), self.t_entity_word[100])
+
+
+		embedding = torch.cat((word, pos1, pos2), dim = 2) #[160,120,60]
+
+		exit()
 		return embedding

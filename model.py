@@ -51,7 +51,7 @@ class Policy(nn.Module):
 
         states_embed = torch.cat((states_embed, cur_class_embed), 1) #[batch. 740]
 
-        #states_embed = self.dropout(states_embed)
+        states_embed = self.dropout(states_embed)
         if self.conf.use_l2: #true
             h1 = F.relu(self.l1(states_embed)) #  [batch, 300] = [batch, 740] * [740, 300]
             h2 = F.relu(self.l2(h1)) #[batch, 50] = [batch, 300] * [300, 50]

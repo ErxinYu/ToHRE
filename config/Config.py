@@ -39,7 +39,7 @@ class Config(object):
 		self.acc_NA_global = Accuracy()
 		self.acc_not_NA_global = Accuracy()
 		self.acc_total_global = Accuracy()
-		self.data_path = './data/57K-unjoined'
+		self.data_path = './data/57K-combined-joined-first'
 		self.use_bag = True
 		self.use_gpu = True
 		self.max_length = 120
@@ -53,7 +53,7 @@ class Config(object):
 		self.optimizer = None
 		self.base_model_lr =  0.5
 		self.base_model_weight_decay = 1e-5
-		self.base_model_drop_prob = 0.5
+		self.base_model_drop_prob = 0
 		self.checkpoint_dir = './checkpoint'
 		self.test_result_dir = './test_result'
 		self.save_epoch = 1
@@ -80,7 +80,7 @@ class Config(object):
 		self.policy_lr = 0.5
 		self.policy_weight_decay = 1e-5
 		self.n_layers = 3
-		self.policy_drop_prob = 0.5
+		self.policy_drop_prob = 0
 		self.cur_layer = 0
 		self.local_loss = 0
 		self.predict_label2num = defaultdict(int)
@@ -91,16 +91,17 @@ class Config(object):
 		self.flat_probs_only = False
 		self.global_ratio = 0
 		self.use_label_weight = False
-		self.out_model_name = "HRE_57K-unjoined"
-		self.gpu = "0"
+		self.out_model_name = "HRE_57K-combined-joined-first"
+		self.gpu = "1"
 
 
 		print("-------config--------")
 		print("self.is_training", self.is_training)
 		print("self.policy_lr", self.policy_lr)
-		print("use dataset 520K", self.data_path)
+		print("use dataset", self.data_path)
 		print("self.hidden_size", self.hidden_size)
-		print("self.use_label_weight", self.use_label_weight)
+		print("self.base_model_drop_prob", self.base_model_drop_prob)
+		print("self.policy_drop_prob", self.policy_drop_prob)
 		print("self.gpu", self.gpu, "\n\n")
 
 	def set_train_model(self, model):
@@ -110,6 +111,11 @@ class Config(object):
 	def load_train_data(self):
 		print("Reading training data...")
 		self.data_word_vec = np.load(os.path.join(self.data_path, 'vec.npy'))
+		self.data_train_h_entity_word = np.load(os.path.join(self.data_path, 'train_h_entity_word.npy'))
+		self.data_train_t_entity_word = np.load(os.path.join(self.data_path, 'train_t_entity_word.npy'))
+		print("self.data_train_h_entity_word", len(self.data_train_h_entity_word), self.data_train_h_entity_word[0])
+		print("self.data_train_t_entity_word", len(self.data_train_t_entity_word), self.data_train_t_entity_word[0])
+
 		self.data_train_word = np.load(os.path.join(self.data_path, 'train_word.npy'))
 		self.data_train_pos1 = np.load(os.path.join(self.data_path, 'train_pos1.npy'))
 		self.data_train_pos2 = np.load(os.path.join(self.data_path, 'train_pos2.npy'))
@@ -155,6 +161,10 @@ class Config(object):
 	def load_test_data(self):
 		print("Reading testing data...")
 		self.data_word_vec = np.load(os.path.join(self.data_path, 'vec.npy'))
+
+		self.data_test_h_entity_word = np.load(os.path.join(self.data_path, 'test_h_entity_word.npy'))
+		self.data_test_t_entity_word = np.load(os.path.join(self.data_path, 'test_t_entity_word.npy'))
+
 		self.data_test_word = np.load(os.path.join(self.data_path, 'test_word.npy'))
 		self.data_test_pos1 = np.load(os.path.join(self.data_path, 'test_pos1.npy'))
 		self.data_test_pos2 = np.load(os.path.join(self.data_path, 'test_pos2.npy'))
@@ -198,6 +208,10 @@ class Config(object):
 			scope.append(scope[len(scope) - 1] + num[1] - num[0] + 1)
 		#print("index", len(index))
 		self.batch_scope = scope
+
+		self.batch_h_entity_word = self.data_train_h_entity_word[index, :]
+		self.batch_t_entity_word = self.data_train_t_entity_word[index, :]
+
 		self.batch_word = self.data_train_word[index, :]
 		self.batch_pos1 = self.data_train_pos1[index, :]
 		self.batch_pos2 = self.data_train_pos2[index, :]
@@ -215,6 +229,10 @@ class Config(object):
 			index = index + list(range(num[0], num[1] + 1))
 			scope.append(scope[len(scope) - 1] + num[1] - num[0] + 1)
 		#print("index", len(index))
+
+		self.batch_h_entity_word = self.data_test_h_entity_word[index, :]
+		self.batch_t_entity_word = self.data_test_t_entity_word[index, :]
+
 		self.batch_word = self.data_test_word[index, :]
 		self.batch_pos1 = self.data_test_pos1[index, :]
 		self.batch_pos2 = self.data_test_pos2[index, :]
@@ -223,6 +241,11 @@ class Config(object):
 		self.bag_ids = self.test_order[batch * self.test_batch_size : (batch + 1) * self.test_batch_size]	
 		return len(index)	
 	def train_one_step(self):
+
+		self.trainModel.embedding.h_entity_word = to_var(self.batch_h_entity_word)
+		self.trainModel.embedding.t_entity_word = to_var(self.batch_t_entity_word)
+
+
 		self.trainModel.embedding.word = to_var(self.batch_word)
 		self.trainModel.embedding.pos1 = to_var(self.batch_pos1)
 		self.trainModel.embedding.pos2 = to_var(self.batch_pos2)
