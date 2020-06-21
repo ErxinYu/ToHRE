@@ -17,7 +17,7 @@ class Selector(nn.Module):
 		self.attention_query = None
 		self.test_attention_query = None
 		self.label = None
-		self.dropout = nn.Dropout(self.config.drop_prob)
+		self.dropout = nn.Dropout(self.config.base_model_drop_prob)
 		self.layer_tensor = torch.arange(3).long().cuda()
 		#print("self.layer_tensor", self.layer_tensor)
 	def init_weights(self):	

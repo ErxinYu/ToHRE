@@ -7,7 +7,30 @@ import torch.optim as optim
 # from gpu_mem_track import MemTracker
 # import inspect
 # frame = inspect.currentframe()     
-# gpu_tracker = MemTracker(frame)     
+# gpu_tracker = MemTracker(frame)  
+class PCNN_word_att(nn.Module):
+	def __init__(self, config): #
+		super(PCNN_word_att, self).__init__()
+		self.config = config
+		self.mask = None
+		self.cnn = _CNN(config)
+		self.word_att = Word_ATT(config)
+		self.pooling = _PiecewisePooling()
+		self.pooling_ori = _PiecewisePooling_ori()
+		self.activation = nn.ReLU()
+		self.attention_query = None
+		self.bag_ids = None
+	def forward(self, embedding):
+		embedding = torch.unsqueeze(embedding, dim = 1) #[241,1,120,60]
+		x = self.cnn(embedding) #[241,300,120,1]
+		if self.config.is_training:
+			#x = self.word_att(x, self.attention_query, self.mask,self.bag_ids)   #[241, 3, 300, 120, 1]
+			x = self.pooling_ori(x, self.mask, self.config.hidden_size) #[241,3,690]
+		else:
+			# x = self.word_att.test(x, self.mask)   #[241, 95, 300, 120, 1]
+			# x = self.pooling.test(x, self.mask, self.config.hidden_size) #[241,95,690]
+			x = self.pooling_ori(x, self.mask, self.config.hidden_size)
+		return self.activation(x)   
 class _PiecewisePooling_Word_Att(nn.Module):
 	def __init(self):
 		super(_PiecewisePooling, self).__init__()
@@ -36,7 +59,7 @@ class _PiecewisePooling_Word_Att(nn.Module):
 		#print("x_final", x.size())
 		x = x - 100
 		return x.view(-1, 95, hidden_size * 3) #[224,95,900]
-class Word_Att(nn.Module):
+class Label_Aware_Word_Att(nn.Module):
 	def __init__(self, config):
 		super(Word_ATT, self).__init__()
 		self.config = config
@@ -150,29 +173,36 @@ class Word_Att(nn.Module):
 		#exit()
 		
 		return word_repre_final
-class PCNN_word_att(nn.Module):
-	def __init__(self, config): #
-		super(PCNN_word_att, self).__init__()
+
+
+class Word_ATT(nn.Module):
+	def __init__(self, config):
+		super(Word_ATT, self).__init__()
 		self.config = config
-		self.mask = None
-		self.cnn = _CNN(config)
-		self.word_att = Word_ATT(config)
-		self.pooling = _PiecewisePooling()
-		self.pooling_ori = _PiecewisePooling_ori()
-		self.activation = nn.ReLU()
-		self.attention_query = None
-		self.bag_ids = None
-	def forward(self, embedding):
-		embedding = torch.unsqueeze(embedding, dim = 1) #[241,1,120,60]
-		x = self.cnn(embedding) #[241,300,120,1]
-		if self.config.is_training:
-			#x = self.word_att(x, self.attention_query, self.mask,self.bag_ids)   #[241, 3, 300, 120, 1]
-			x = self.pooling_ori(x, self.mask, self.config.hidden_size) #[241,3,690]
-		else:
-			# x = self.word_att.test(x, self.mask)   #[241, 95, 300, 120, 1]
-			# x = self.pooling.test(x, self.mask, self.config.hidden_size) #[241,95,690]
-			x = self.pooling_ori(x, self.mask, self.config.hidden_size)
-		return self.activation(x)
+		self.w1= nn.Embedding(60, 60) #[60,60]
+		self.w2 = nn.Embedding(60, 60)#[60,60]
+		self.activation = nn.Tanh()
+		nn.init.xavier_uniform_(self.w1.weight.data)
+		nn.init.xavier_uniform_(self.w2.weight.data)
+		torch.set_printoptions(precision=8)
+	def forward(self, x): #x=[241,120,60]
+		# x_1 = torch.transpose(x, 1, 2) #[241,60,120]
+		a_1 = torch.matmul(x, self.w1.weight)  #[241,120,60] =  [241, 120, 60] * [60,60]  
+		# print("a_1", a_1.size())
+		a_1 = self.activation(a_1)
+		a_2 = torch.matmul(a_1, self.w2.weight)	#[241,120,60] = [241,120,60] * [60,60]
+		# print("a_2", a_2.size())
+		a_4 = F.softmax(a_2,1) #[241,120,60]
+		print("a_4", a_4[0], a_4.size())
+		# a_4 = a_4.unsqueeze(2)
+		# a_5 = a_4.expand(-1, 120, 60) #[241,120, 60]
+		# print("a_5", a_5[0], a_5.size())
+		x_final = x.mul(a_4) #[241,120,60] = [241,120,60] * [241,120,60]
+		#print("x_final", x_final.size())
+		return x_final
+
+
+
 
 
 class PCNN(nn.Module):
@@ -180,19 +210,23 @@ class PCNN(nn.Module):
 		super(PCNN, self).__init__()
 		self.config = config
 		self.mask = None
+		self.word_att = Word_ATT(config)
 		self.cnn = _CNN(config)
 		self.pooling = _PiecewisePooling()
 		self.activation = nn.ReLU()
 		self.attention_query = None
 		self.bag_ids = None
-	def forward(self, embedding):
+		self.dropout = nn.Dropout(self.config.base_model_drop_prob)
+	def forward(self, embedding): # embedding [241,120,60]
+		#embedding = self.word_att(embedding)
 		embedding = torch.unsqueeze(embedding, dim = 1) #[241,1,120,60]
 		x = self.cnn(embedding) #[241,300,120,1]
 		# print("encoder cnn x", x.size())
 		x = self.pooling(x, self.mask, self.config.hidden_size) #[241, 690]
 		# print("encoder pooling x", x.size())
-		return self.activation(x)
-
+		x = self.activation(x)
+		#x = self.dropout(x)
+		return x
 class _CNN(nn.Module):
 	def __init__(self, config):
 		super(_CNN, self).__init__()

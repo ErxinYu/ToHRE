@@ -3,14 +3,14 @@ import os
 import json
 from collections import defaultdict, Counter
 
-in_path = "./raw_data/"
-out_path = "./data_mixed_unjoined_first_pos"
+in_path = "./raw_data/52K/"
+out_path = "./data/52K-joined/"
 #out_path = "./data"
 case_sensitive = False
 if not os.path.exists(out_path):
         os.mkdir(out_path)
-train_file_name = in_path + 'train_mixed_unjoined_first.json'
-test_file_name = in_path + 'test_mixed_unjoined_first.json'
+train_file_name = in_path + 'train_joined.json'
+test_file_name = in_path + 'test_joined.json'
 word_file_name = in_path + 'word_vec.json'
 rel_file_name = in_path + 'rel_desc2id.json'
 
@@ -25,10 +25,7 @@ def gen_hierarchical_label():
         layer2_label_set = set()
         layer3_label_set = set()
         all_layer_label2num = defaultdict(int)
-
-        # with open("./raw_data/rel2id.json", 'r') as file:
-        #       rel2id_origin = json.load(file)
-        with open("./raw_data/rel_desc2id.json", 'r') as file:
+        with open(rel_file_name, 'r') as file:
                 rel2id_origin = json.load(file)
         print(rel2id_origin)
         rel2id = sorted(rel2id_origin.items(), key=lambda item:item[1])
@@ -41,11 +38,7 @@ def gen_hierarchical_label():
                         layer1_label = "/" + label.split("/")[1]
                         layer2_label = layer1_label + "/" + label.split("/")[2]
                         layer3_label = layer2_label + "/" + label.split("/")[3]
-                        # layer2_label = "/" + label.split("/")[2]
-                        # layer3_label = "/" + label.split("/")[3]                      
-                        # all_layer_label2num[layer1_label] += 1
-                        # all_layer_label2num[layer2_label] += 1
-                        # all_layer_label2num[layer3_label] += 1
+
                         layer1_label_set.add(layer1_label) 
                         layer2_label_set.add(layer2_label)
                         layer3_label_set.add(layer3_label)
@@ -54,7 +47,6 @@ def gen_hierarchical_label():
                         p2c[layer1_label].append(layer2_label)
                         p2c[layer2_label].append(layer3_label)
                         p2c[layer3_label] = []
-        #print("all_layer_label2num", all_layer_label2num, len(all_layer_label2num))
         for parent in p2c:
                 p2c[parent] = list(set(p2c[parent]))
 
@@ -97,17 +89,11 @@ def gen_hierarchical_label():
                 relation_id2h_relation_id[parent] = list(set(relation_id2h_relation_id[parent]))
                 relation_id2h_relation_id[parent].sort()
         relation_id2h_relation_id[0] = [1,1,1]
-        with open("./data/relation_id2h_relation_id.json", "w") as file:
+        with open(out_path + "relation_id2h_relation_id.json", "w") as file:
                 json.dump(relation_id2h_relation_id, file)
 
-        with open("./data/p2c_id.json", "w") as file:
+        with open(out_path + "p2c_id.json", "w") as file:
                 json.dump(p2c_id, file)
-
-
-        #print("p2c", p2c, len(p2c))
-        #print("p2c_id", p2c_id, len(p2c_id))
-        print("relation_id2h_relation_id", relation_id2h_relation_id, len(relation_id2h_relation_id))
-        #print("rel_desc2id", rel2id_origin, len(rel2id_origin))
 
         return relation_id2h_relation_id
 
@@ -125,10 +111,7 @@ def find_pos(sentence, head, tail):
                 else:
                         p += 1
                 return p
-
-
         sentence = ' '.join(sentence.split())   
-        
         p1 = find(sentence, head)
         p2 = find(sentence, tail)
         words = sentence.split()
@@ -323,6 +306,6 @@ def init(file_name, word_vec_file_name, rel2id_file_name, max_length = 120, case
                 json.dump(bag_key_dict, file)
         print("Finish saving")          
 
-#init(train_file_name, word_file_name, rel_file_name, max_length = 120, case_sensitive = False, is_training = True)
-#init(test_file_name, word_file_name, rel_file_name, max_length = 120, case_sensitive = False, is_training = False)
+init(train_file_name, word_file_name, rel_file_name, max_length = 120, case_sensitive = False, is_training = True)
+init(test_file_name, word_file_name, rel_file_name, max_length = 120, case_sensitive = False, is_training = False)
 gen_hierarchical_label()

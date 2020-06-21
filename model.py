@@ -31,7 +31,6 @@ class Policy(nn.Module):
         self.bag_vec_layer1 = None
         self.bag_vec_layer2 = None
         self.base_model = base_model
-        self.criterion = torch.nn.CrossEntropyLoss()#二分类交叉熵函数，输入logits和label，返回loss
         self.sl_loss = 0
         in_dim = self.conf.class_embed_size + self.conf.hidden_size * 3 # i 我们的indim = indim_ori(690) + class_embed_size(50) = 740
 
@@ -118,12 +117,19 @@ class Policy(nn.Module):
                 loss = torch.sum(loss, dim=0)
                 loss = loss/cur_batch_size
                 self.sl_loss += loss
-            else:
+            else:                
+                # print("y_true", y_true, y_true.size())
+                # print("probs", probs, probs.size())
+                # print("torch.softmax(probs, dim=1)", torch.softmax(probs, dim=1), torch.softmax(probs, dim=1).size())
+                # loss = self.criterion(probs, y_true)
+                # print("loss", loss, loss.size())
+                # loss = self.criterion_all(probs, y_true)
+                # print("loss", loss, loss.size())
                 loss = self.criterion_all(probs, y_true)
                 # print("loss", loss, (loss * cur_size / cur_batch_size), self.conf.cur_layer)
-
-                #self.sl_loss += (loss * cur_size / cur_batch_size)
                 self.sl_loss += (loss * cur_size / cur_batch_size)
+                #self.sl_loss += loss
+
         return torch.softmax(probs, dim=1)
 
 

@@ -15,14 +15,18 @@ import json
 
 class Tree:
     def __init__(self, conf):
-        with open("./data/p2c_id.json", "r") as file:
+
+        self.conf = conf
+
+        with open(self.conf.data_path + "/p2c_id.json", "r") as file:
             self.p2c_idx_temp = json.load(file)  
-        self.train_hierarchical_bag_label_np = np.load("./data/train_hierarchical_bag_label.npy")
-        self.test_hierarchical_bag_label_np = np.load("./data/test_hierarchical_bag_label.npy")
+
+        self.train_hierarchical_bag_label_np = np.load(self.conf.data_path + "/train_hierarchical_bag_label.npy")
+        self.test_hierarchical_bag_label_np = np.load(self.conf.data_path + "/test_hierarchical_bag_label.npy")
         self.p2c_idx = {}
         for i in self.p2c_idx_temp:
             self.p2c_idx[int(i)] = self.p2c_idx_temp[i]
-        self.conf = conf
+        
 
         not_na_bag = 0
         self.train_label2num = defaultdict(int) 
@@ -40,14 +44,13 @@ class Tree:
             self.test_hierarchical_bag_label[bag_id] = self.test_hierarchical_bag_label_np[bag_id]
 
 
-        with open("./data/test_hierarchical_bag_multi_label.json", "r") as file:
-            # test_hierarchical_bag_multi_label.json
+        with open(self.conf.data_path + "/test_hierarchical_bag_multi_label.json", "r") as file:
             self.test_hierarchical_bag_multi_label_temp = json.load(file)
             self.test_hierarchical_bag_multi_label = {}
             for bag_id in self.test_hierarchical_bag_multi_label_temp:
                 self.test_hierarchical_bag_multi_label[int(bag_id)] = self.test_hierarchical_bag_multi_label_temp[bag_id] 
         
-        with open("./data/relation_id2h_relation_id.json", "r") as file:
+        with open(self.conf.data_path + "/relation_id2h_relation_id.json", "r") as file:
             self.relation_id2h_relation_id = json.load(file)
 
         self.next_true_bin, self.next_true = self.generate_next_true()

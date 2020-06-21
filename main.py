@@ -226,9 +226,7 @@ def test_epoch_by_all(epoch):
             #h_probs            [160,8]                 [1280,15]                           [5440,7]
             
             conf.cur_layer = layer
-
             next_classes_batch = tree.p2c_batch(cur_class_batch)#[batch,mc] [160,8] 
-
             policy.get_test_bag_vec(next_classes_batch, indices) #根据next_classes_batch选择 self.bag_vec = [160,8,690] 
             h_probs = policy.step_sl_test(conf, cur_class_batch, next_classes_batch)
             h_probs_np = h_probs.cpu().detach().numpy()      
@@ -340,14 +338,15 @@ def test():
     best_test_result = None
 
     #epochs = range(1，10)
-    epochs = [3,4,5]
+    epochs = [4]
     for epoch in epochs:
-        auc, p, r, test_result = test_epoch_by_all(epoch) 
+        auc, p_4, p, r, test_result = test_json(epoch) 
         if auc > best_auc:
             best_auc = auc
+            best_p_4 = p_4
             best_epoch = epoch
-            best_p = p
-            best_r = r
+            best_p = p         #横坐标
+            best_r = r         #纵坐标
             best_test_result = test_result
         print("Finish testing epoch %d" % (epoch))
 
@@ -374,7 +373,7 @@ def test():
     print("Finish storing")
 
 def test_json(epoch):
-    print(len(conf.test_batch_attention_query))
+
     print("\nstart test epoch %d "%(epoch))
     file_name = "./test_result/" + conf.out_model_name + "_epoch_" + str(epoch)+ ".json"
     with open(file_name, "r") as file:
@@ -444,7 +443,7 @@ def test_json(epoch):
             break     
     print("test auc_local: ", auc)
     print("p_4", p_4)
-    return auc, pr_x, pr_y, test_result
+    return auc, p_4, pr_x, pr_y, test_result
 
 
 

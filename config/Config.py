@@ -39,21 +39,21 @@ class Config(object):
 		self.acc_NA_global = Accuracy()
 		self.acc_not_NA_global = Accuracy()
 		self.acc_total_global = Accuracy()
-		self.data_path = './data'
+		self.data_path = './data/57K-unjoined'
 		self.use_bag = True
 		self.use_gpu = True
 		self.max_length = 120
 		self.pos_num = 2 * self.max_length
 		self.flat_num_classes = 53
-		self.hidden_size = 230
-		self.da = 150
+		self.hidden_size = 300
+		self.da = 30
 		self.pos_size = 5
 		self.max_epoch = 200
 		self.opt_method = 'SGD'
 		self.optimizer = None
 		self.base_model_lr =  0.5
 		self.base_model_weight_decay = 1e-5
-		self.drop_prob = 0.8
+		self.base_model_drop_prob = 0.5
 		self.checkpoint_dir = './checkpoint'
 		self.test_result_dir = './test_result'
 		self.save_epoch = 1
@@ -87,12 +87,12 @@ class Config(object):
 		self.pred_not_na = 0
 		self.global_num_classes = 95
 
-		self.is_training = False
+		self.is_training = True
 		self.flat_probs_only = False
 		self.global_ratio = 0
 		self.use_label_weight = False
-		self.out_model_name = "HRE"
-		self.gpu = "0"
+		self.out_model_name = "HRE_57K-unjoined"
+		self.gpu = "1"
 
 
 		print("-------config--------")
@@ -164,13 +164,13 @@ class Config(object):
 		self.test_order = list(range(len(self.data_test_label)))
 		self.test_batches = len(self.data_test_label) / self.test_batch_size
 
-		with open("./data/test_bag_key.json", "r") as file:
+		with open(self.data_path + "/test_bag_key.json", "r") as file:
 			self.test_bag_key_dict_temp = json.load(file)
 			self.test_bag_key_dict = {}
 			for bag_id in self.test_bag_key_dict_temp:
 				self.test_bag_key_dict[int(bag_id)] = self.test_bag_key_dict_temp[bag_id]
 	
-		with open("./data/relation_id2h_relation_id.json", "r") as file:
+		with open(self.data_path + "/relation_id2h_relation_id.json", "r") as file:
 			self.relation_id2h_relation_id = json.load(file)
 		self.relation_id2h_relation_id_list = []
 
