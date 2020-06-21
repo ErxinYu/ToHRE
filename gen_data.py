@@ -3,14 +3,14 @@ import os
 import json
 from collections import defaultdict, Counter
 
-in_path = "./raw_data/52K/"
-out_path = "./data/52K-joined/"
+in_path = "./raw_data/57K/"
+out_path = "./data/57K-combined-unjoined-first/"
 #out_path = "./data"
 case_sensitive = False
 if not os.path.exists(out_path):
         os.mkdir(out_path)
-train_file_name = in_path + 'train_joined.json'
-test_file_name = in_path + 'test_joined.json'
+train_file_name = in_path + 'train_combined_unjoined_first.json'
+test_file_name = in_path + 'test_combined_unjoined_first.json'
 word_file_name = in_path + 'word_vec.json'
 rel_file_name = in_path + 'rel_desc2id.json'
 
@@ -183,6 +183,8 @@ def init(file_name, word_vec_file_name, rel2id_file_name, max_length = 120, case
         print("Finish sorting")
         
         sen_tot = len(ori_data)
+        h_entity_word = np.zeros((sen_tot, 1), dtype = np.int64)
+        t_entity_word = np.zeros((sen_tot, 1), dtype = np.int64)
         sen_word = np.zeros((sen_tot, max_length), dtype = np.int64)
         sen_pos1 = np.zeros((sen_tot, max_length), dtype = np.int64)
         sen_pos2 = np.zeros((sen_tot, max_length), dtype = np.int64)

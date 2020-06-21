@@ -92,7 +92,7 @@ class Config(object):
 		self.global_ratio = 0
 		self.use_label_weight = False
 		self.out_model_name = "HRE_57K-unjoined"
-		self.gpu = "1"
+		self.gpu = "0"
 
 
 		print("-------config--------")

@@ -206,10 +206,6 @@ def test_epoch_by_all(epoch):
     over = 0
     for batch_num in tqdm(range(conf.test_batches)):  
         sen_num = conf.get_test_batch(batch_num)
-        # if sen_num > 100: 为了防止包太大搞的
-        #     print(sen_num)
-        #     over += 1
-        #     continue
         conf.test_one_step()
         logits = policy.base_model.test_hierarchical() #[160,95,690]
         policy.bag_vec_test = logits
@@ -276,28 +272,20 @@ def test_epoch_by_all(epoch):
             label_layer_0_index = str(bag_id) + "_" + str(y_true[0])
             label_layer_1_index = str(bag_id) + "_" + str(y_true[1])
             label_layer_2_index = str(bag_id) + "_" + str(y_true[2])
-            if predict_layer_0_index not in bagid_label2prob_dict:
-                predict_layer0_prob = 0
-                predict_layer1_prob = 0
-                predict_layer2_prob = 0
-                predict_layer2_prob = 0
-                label_layer0_prob = 0
-                label_layer1_prob = 0
-                label_layer2_prob = 0
-                # print("error",error)
-                error += 1
 
+            predict_layer0_prob = bagid_label2prob_dict[predict_layer_0_index]
+            if indices[0] in [7,8]:
+                predict_layer1_prob = 1
             else:
-                predict_layer0_prob = bagid_label2prob_dict[predict_layer_0_index]
                 predict_layer1_prob = bagid_label2prob_dict[predict_layer_1_index]
-                if indices[1] in [27,34,28, 22, 20, 21, 33,29,31,30,25,24,32,39,40,11,13,14,15,9,10,42,18,27,19,41]:
-                    predict_layer2_prob = 1
-                else:
-                    predict_layer2_prob = bagid_label2prob_dict[predict_layer_2_index]
-            
-                label_layer0_prob = bagid_label2prob_dict[label_layer_0_index]
-                label_layer1_prob = bagid_label2prob_dict[label_layer_1_index]
-                label_layer2_prob = bagid_label2prob_dict[label_layer_2_index]
+            if indices[1] in [27,34,28, 22, 20, 21, 33,29,31,30,25,24,32,39,40,11,13,14,15,9,10,42,18,27,19,41]:
+                predict_layer2_prob = 1
+            else:
+                predict_layer2_prob = bagid_label2prob_dict[predict_layer_2_index]
+        
+            label_layer0_prob = bagid_label2prob_dict[label_layer_0_index]
+            label_layer1_prob = bagid_label2prob_dict[label_layer_1_index]
+            label_layer2_prob = bagid_label2prob_dict[label_layer_2_index]
 
             if predict_layer_2_index in bagid_label2prob_dict:
                 predict_prob = predict_layer0_prob * predict_layer1_prob * predict_layer2_prob
@@ -338,7 +326,7 @@ def test():
     best_test_result = None
 
     #epochs = range(1，10)
-    epochs = [4]
+    epochs = [6]
     for epoch in epochs:
         auc, p_4, p, r, test_result = test_json(epoch) 
         if auc > best_auc:
@@ -393,36 +381,29 @@ def test_json(epoch):
             label_layer_0_index = str(bag_id) + "_" + str(y_true[0])
             label_layer_1_index = str(bag_id) + "_" + str(y_true[1])
             label_layer_2_index = str(bag_id) + "_" + str(y_true[2])
-            if predict_layer_0_index not in bagid_label2prob_dict:
-                predict_layer0_prob = 0
-                predict_layer1_prob = 0
-                predict_layer2_prob = 0
-                predict_layer2_prob = 0
-                label_layer0_prob = 0
-                label_layer1_prob = 0
-                label_layer2_prob = 0
-                print("error",error)
-                error += 1
 
+            predict_layer0_prob = bagid_label2prob_dict[predict_layer_0_index]
+            if indices[0] in [7,8]:
+                predict_layer1_prob = 1
             else:
-                predict_layer0_prob = bagid_label2prob_dict[predict_layer_0_index]
                 predict_layer1_prob = bagid_label2prob_dict[predict_layer_1_index]
-                if indices[1] in [27,34,28, 22, 20, 21, 33,29,31,30,25,24,32,39,40,11,13,14,15,9,10,42,18,27,19,41]:
-                    predict_layer2_prob = 1
-                else:
-                    predict_layer2_prob = bagid_label2prob_dict[predict_layer_2_index]
-            
-                label_layer0_prob = bagid_label2prob_dict[label_layer_0_index]
-                label_layer1_prob = bagid_label2prob_dict[label_layer_1_index]
-                label_layer2_prob = bagid_label2prob_dict[label_layer_2_index]
+            if indices[1] in [27,34,28, 22, 20, 21, 33,29,31,30,25,24,32,39,40,11,13,14,15,9,10,42,18,27,19,41]:
+                predict_layer2_prob = 1
+            else:
+                predict_layer2_prob = bagid_label2prob_dict[predict_layer_2_index]
+        
+            label_layer0_prob = bagid_label2prob_dict[label_layer_0_index]
+            label_layer1_prob = bagid_label2prob_dict[label_layer_1_index]
+            label_layer2_prob = bagid_label2prob_dict[label_layer_2_index]
 
             if predict_layer_2_index in bagid_label2prob_dict:
                 predict_prob = predict_layer0_prob * predict_layer1_prob * predict_layer2_prob
                 label_prob = label_layer0_prob * label_layer1_prob * label_layer2_prob
                 ans = int(indices[2] in y_true)
-                test_result.append([ans, predict_prob, indices[2], predict_layer0_prob, predict_layer1_prob, predict_layer2_prob, y_true, label_prob, label_layer0_prob, label_layer1_prob, label_layer2_prob])
+                test_result.append([ans, predict_prob, indices[2], predict_layer0_prob, predict_layer1_prob, predict_layer2_prob, y_true, label_prob, label_layer0_prob, label_layer1_prob, label_layer2_prob, bag_id])
             else:
                 print(predict_layer_0_index,predict_layer_1_index,predict_layer_2_index)
+
     test_result = sorted(test_result, key = lambda x: x[1])
     test_result = test_result[::-1]
     pr_x = []
