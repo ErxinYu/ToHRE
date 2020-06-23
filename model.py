@@ -34,8 +34,8 @@ class Policy(nn.Module):
         self.sl_loss = 0
         in_dim = self.conf.class_embed_size + self.conf.hidden_size * 3 # i 我们的indim = indim_ori(690) + class_embed_size(50) = 740
 
-        self.l1 = nn.Linear(in_dim, self.conf.l1_size)# ours: [740,300]
-        self.l2 = nn.Linear(self.conf.l1_size, self.conf.class_embed_size) #[300,50]
+        self.l1 = nn.Linear(in_dim, self.conf.l1_size)# ours: [740,l1_size]
+        self.l2 = nn.Linear(self.conf.l1_size, self.conf.class_embed_size) #[li_size,50]
         if not self.conf.use_l2:
             self.l1 = nn.Linear(in_dim, conf.class_embed_size)# [790,100]
         self.dropout = nn.Dropout(conf.policy_drop_prob)

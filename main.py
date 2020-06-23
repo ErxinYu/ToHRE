@@ -45,9 +45,6 @@ def forward_step_sl():#详细介绍
         return global_loss, flat_probs
 
     policy.bag_vec_layer0 = logits_layers[0]
-
-    #print("policy.bag_vec_layer0", policy.bag_vec_layer0.size())
-    
     policy.bag_vec_layer1 = logits_layers[1]
     policy.bag_vec_layer2 = logits_layers[2]
     # policy.bag_vec = logits
@@ -141,11 +138,7 @@ def train():
         conf.acc_total_global.clear()
 
         for batch_num in range(conf.train_batches):
-            sen_num = conf.get_train_batch(batch_num)
-            # if sen_num > 300: %为了防止包太大搞的
-            #     num_delete_bag += 1
-            #     print("num_delete_bag-index",num_delete_bag, sen_num)
-            #     continue
+            conf.get_train_batch(batch_num)
             conf.train_one_step()
             global_loss, flat_probs = forward_step_sl()
 
@@ -326,7 +319,7 @@ def test():
     best_test_result = None
 
     #epochs = range(1，10)
-    epochs = [6]
+    epochs = [14]
     for epoch in epochs:
         auc, p_4, p, r, test_result = test_json(epoch) 
         if auc > best_auc:
@@ -363,17 +356,42 @@ def test():
 def test_json(epoch):
 
     print("\nstart test epoch %d "%(epoch))
-    file_name = "./test_result/" + conf.out_model_name + "_epoch_" + str(epoch)+ ".json"
+    file_name = "./test_result/0.4667_best_result/" + conf.out_model_name + "_epoch_" + str(epoch)+ ".json"
     with open(file_name, "r") as file:
         bagid_label2prob_dict = json.load(file)
     print("read file from ", file_name)
     print(len(bagid_label2prob_dict))
     test_result = []
     error = 0
+
+    lt_bag_100 = 0
+    lt_bag_100_hits_10 = 0
+    lt_bag_100_hits_15 = 0
+    lt_bag_100_hits_20 = 0
+    lt_label_100_dict = defaultdict(int)
+    lt_100_predict_10_dict = defaultdict(int)
+    lt_100_predict_15_dict = defaultdict(int)
+    lt_100_predict_20_dict = defaultdict(int)
+    lt_100_macro_10 = 0
+    lt_100_macro_15 = 0
+    lt_100_macro_20 = 0
+
+    lt_bag_200 = 0
+    lt_bag_200_hits_10 = 0
+    lt_bag_200_hits_15 = 0
+    lt_bag_200_hits_20 = 0
+    lt_label_200_dict = defaultdict(int)
+    lt_200_predict_10_dict = defaultdict(int)
+    lt_200_predict_15_dict = defaultdict(int)
+    lt_200_predict_20_dict = defaultdict(int)
+    lt_200_macro_10 = 0
+    lt_200_macro_15 = 0
+    lt_200_macro_20 = 0
+
     for bag_id in tqdm(range(len(tree.test_hierarchical_bag_multi_label))):
         y_true = tree.test_hierarchical_bag_multi_label[bag_id]
+        bag_id_prob = []
         for i in range(1, len(conf.test_batch_attention_query)):
-
             indices = conf.test_batch_attention_query[i]
             predict_layer_0_index = str(bag_id) + "_" + str(indices[0])
             predict_layer_1_index = str(bag_id) + "_" + str(indices[1])
@@ -401,11 +419,122 @@ def test_json(epoch):
                 label_prob = label_layer0_prob * label_layer1_prob * label_layer2_prob
                 ans = int(indices[2] in y_true)
                 test_result.append([ans, predict_prob, indices[2], predict_layer0_prob, predict_layer1_prob, predict_layer2_prob, y_true, label_prob, label_layer0_prob, label_layer1_prob, label_layer2_prob, bag_id])
+                bag_id_prob.append([indices[2], predict_prob, bag_id])
             else:
                 print(predict_layer_0_index,predict_layer_1_index,predict_layer_2_index)
+        # print(set(y_true))
+        #print(conf.layer2_100, type(conf.layer2_100))
+        #print((set(y_true) & conf.layer2_100))
+        y_true = conf.data_test_hierarchical_label[bag_id]
+        if (set(y_true) & conf.layer2_100):
+            # print(set(y_true))
+            # print(conf.layer2_100)
+            lt_label_100_dict[max(y_true)] += 1
+            lt_bag_100 += 1
+            bag_id_prob = sorted(bag_id_prob, key = lambda x: x[1])
+            bag_id_prob = bag_id_prob[::-1]
+
+            bag_id_prob_10 = bag_id_prob[:10]
+            bag_id_prob_15 = bag_id_prob[:15]
+            bag_id_prob_20 = bag_id_prob[:20]
+
+            bag_id_prob_10 = [x[0] for x in bag_id_prob_10]
+            bag_id_prob_15 = [x[0] for x in bag_id_prob_15]
+            bag_id_prob_20 = [x[0] for x in bag_id_prob_20]
+
+            # print(bag_id_prob_10, len(bag_id_prob_10))
+            # print(bag_id_prob_15, len(bag_id_prob_15))
+            # print(bag_id_prob_20, len(bag_id_prob_20))
+            if (set(y_true) & set(bag_id_prob_10)):
+                lt_bag_100_hits_10 += 1
+                lt_100_predict_10_dict[max(y_true)] += 1
+            if (set(y_true) & set(bag_id_prob_15)):
+                lt_bag_100_hits_15 += 1
+                lt_100_predict_15_dict[max(y_true)] += 1
+            if (set(y_true) & set(bag_id_prob_20)):
+                lt_bag_100_hits_20 += 1
+                lt_100_predict_20_dict[max(y_true)] += 1
+            # print("\n\n")
+
+        if (set(y_true) & conf.layer2_200):
+            # print(set(y_true))
+            # print(conf.layer2_200)
+            lt_label_200_dict[max(y_true)] += 1
+            lt_bag_200 += 1
+            bag_id_prob = sorted(bag_id_prob, key = lambda x: x[1])
+            bag_id_prob = bag_id_prob[::-1]
+            bag_id_prob_10 = bag_id_prob[:10]
+            bag_id_prob_15 = bag_id_prob[:15]
+            bag_id_prob_20 = bag_id_prob[:20]
+
+            bag_id_prob_10 = [x[0] for x in bag_id_prob_10]
+            bag_id_prob_15 = [x[0] for x in bag_id_prob_15]
+            bag_id_prob_20 = [x[0] for x in bag_id_prob_20]
+
+            # print(bag_id_prob_10, len(bag_id_prob_10))
+            # print(bag_id_prob_15, len(bag_id_prob_15))
+            # print(bag_id_prob_20, len(bag_id_prob_20))
+            if (set(y_true) & set(bag_id_prob_10)):
+                lt_bag_200_hits_10 += 1
+                lt_200_predict_10_dict[max(y_true)] += 1
+            if (set(y_true) & set(bag_id_prob_15)):
+                lt_bag_200_hits_15 += 1
+                lt_200_predict_15_dict[max(y_true)] += 1
+            if (set(y_true) & set(bag_id_prob_20)):
+                lt_bag_200_hits_20 += 1
+                lt_200_predict_20_dict[max(y_true)] += 1
+            print("\n\n")
+
+    print("lt_label_100_dict", lt_label_100_dict)
+    print("lt_label_200_dict", lt_label_200_dict)
+
+    for label in lt_label_100_dict:
+        lt_100_predict_10_dict[label] = lt_100_predict_10_dict[label] / lt_label_100_dict[label]
+        lt_100_macro_10 += lt_100_predict_10_dict[label]
+
+        lt_100_predict_15_dict[label] = lt_100_predict_15_dict[label] / lt_label_100_dict[label]
+        lt_100_macro_15 += lt_100_predict_15_dict[label] 
+
+        lt_100_predict_20_dict[label] = lt_100_predict_20_dict[label] / lt_label_100_dict[label]
+        lt_100_macro_20 += lt_100_predict_20_dict[label]
+
+
+    for label in lt_label_200_dict:
+        lt_200_predict_10_dict[label] = lt_200_predict_10_dict[label] / lt_label_200_dict[label]
+        lt_200_macro_10 += lt_200_predict_10_dict[label]
+
+        lt_200_predict_15_dict[label] = lt_200_predict_15_dict[label] / lt_label_200_dict[label]
+        lt_200_macro_15 += lt_200_predict_15_dict[label] 
+
+        lt_200_predict_20_dict[label] = lt_200_predict_20_dict[label] / lt_label_200_dict[label]
+        lt_200_macro_20 += lt_200_predict_20_dict[label]
+
+
+
+    print("lt_100_macro_10", lt_100_macro_10, len(lt_label_100_dict), lt_100_macro_10/len(lt_label_100_dict))
+    print("lt_100_macro_15", lt_100_macro_15, len(lt_label_100_dict), lt_100_macro_15/len(lt_label_100_dict))
+    print("lt_100_macro_20", lt_100_macro_20, len(lt_label_100_dict), lt_100_macro_20/len(lt_label_100_dict))
+
+    print("lt_200_macro_10", lt_200_macro_10, len(lt_label_200_dict), lt_200_macro_10/len(lt_label_200_dict))
+    print("lt_200_macro_15", lt_200_macro_15, len(lt_label_200_dict), lt_200_macro_15/len(lt_label_200_dict))
+    print("lt_200_macro_20", lt_200_macro_20, len(lt_label_200_dict), lt_200_macro_20/len(lt_label_200_dict))
+
+    print("lt_bag_100", lt_bag_100)
+    print("lt_100_micro_10", lt_bag_100_hits_10/lt_bag_100)
+    print("lt_100_micro_15", lt_bag_100_hits_15/lt_bag_100)
+    print("lt_100_micro_20", lt_bag_100_hits_20/lt_bag_100)
+
+    print("lt_bag_200", lt_bag_200)
+    print("lt_200_micro_10", lt_bag_200_hits_10/lt_bag_200)
+    print("lt_200_micro_15", lt_bag_200_hits_15/lt_bag_200)
+    print("lt_200_micro_20", lt_bag_200_hits_20/lt_bag_200)
 
     test_result = sorted(test_result, key = lambda x: x[1])
     test_result = test_result[::-1]
+
+
+
+
     pr_x = []
     pr_y = []
     correct = 0
