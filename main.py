@@ -24,12 +24,12 @@ from model import Policy
 from tree import Tree
 import sklearn.metrics
 
-
 def calc_sl_loss(probs, update=True):
     y_true = conf.batch_label
     y_true = Variable(torch.from_numpy(y_true)).cuda().long()
     loss = criterion(probs, y_true)
     return loss
+
 def forward_step_sl():#详细介绍
 
     # TODO can reuse logits
@@ -71,7 +71,7 @@ def forward_step_sl():#详细介绍
         # print("cur_class_batch_selected", cur_class_batch, len(cur_class_batch), "layer", layer)
         # print("next_classes_batch_selected", next_classes_batch, next_classes_batch[0], len(next_classes_batch), "layer", layer)
         # print("policy.bag_vec", policy.bag_vec, policy.bag_vec.size(), "layer", layer)
-        probs = policy.step_sl(conf, cur_class_batch, next_classes_batch, next_classes_batch_true)#加入local_loss
+        probs = policy.step_sl(conf, cur_class_batch, next_classes_batch, next_classes_batch_true, indices)#加入local_loss
         cur_class_batch = next_class_batch
 
         ###cal train step hierarchical
@@ -97,8 +97,10 @@ def forward_step_sl():#详细介绍
                 elif y_pred == 1:
                     conf.acc_NA_local.add(y_pred in y_true)
     #policy.sl_loss /= conf.n_steps# n_steps=17 不知道这里为什么取17
+    # exit()
     policy.sl_loss = (1 - conf.global_ratio) * policy.sl_loss + conf.global_ratio * global_loss
     return global_loss, flat_probs
+
 def cal_train_one_step_flat(probs):
     _, _output = torch.max(probs, dim = 1)
     _output = _output.cpu().numpy()
@@ -109,6 +111,7 @@ def cal_train_one_step_flat(probs):
         else:
             conf.acc_not_NA_global.add(conf.batch_label[i] == prediction)
         conf.acc_total_global.add(conf.batch_label[i] == prediction)
+
 def train():
     print("Star train model ", conf.out_model_name)
     conf.set_train_model(policy.base_model)
@@ -117,7 +120,8 @@ def train():
     best_r = None
     best_epoch = 0
     num_delete_bag = 0
-    #policy.load_state_dict(torch.load("./checkpoint/word_epoch" + str(5)))  
+    #"./checkpoint/" + conf.out_model_name + "_epoch_" + str(epoch)
+    #policy.load_state_dict(torch.load("./checkpoint/" + conf.out_model_name + "_epoch_" + str(4)))  
     for epoch in range(1, conf.max_epoch + 1):
         conf.is_training = True
         policy.train()
@@ -162,6 +166,7 @@ def train():
     print("Finish training")
     print("Best epoch = %d | auc = %f" % (best_epoch, best_auc))
     print("Storing best result...")
+
 def test_epoch_by_all(epoch):
     
     # set test model
@@ -256,6 +261,8 @@ def test_epoch_by_all(epoch):
     error = 0
     for bag_id in tqdm(range(len(tree.test_hierarchical_bag_multi_label))):
         y_true = tree.test_hierarchical_bag_multi_label[bag_id]
+        if bag_id in conf.re_bag_id:
+            continue
         for i in range(1, len(conf.test_batch_attention_query)):
 
             indices = conf.test_batch_attention_query[i]
@@ -309,7 +316,6 @@ def test_epoch_by_all(epoch):
     print("p_4", p_4)
     return auc, pr_x, pr_y, test_result
 
-
 def test():
     best_epoch = None
     best_auc = 0.0
@@ -356,7 +362,7 @@ def test():
 def test_json(epoch):
 
     print("\nstart test epoch %d "%(epoch))
-    file_name = "./test_result/0.4667_best_result/" + conf.out_model_name + "_epoch_" + str(epoch)+ ".json"
+    file_name = "./test_result/" + conf.out_model_name + "_epoch_" + str(epoch)+ ".json"
     with open(file_name, "r") as file:
         bagid_label2prob_dict = json.load(file)
     print("read file from ", file_name)
@@ -390,6 +396,8 @@ def test_json(epoch):
 
     for bag_id in tqdm(range(len(tree.test_hierarchical_bag_multi_label))):
         y_true = tree.test_hierarchical_bag_multi_label[bag_id]
+        if bag_id in conf.re_bag_id:
+            continue       
         bag_id_prob = []
         for i in range(1, len(conf.test_batch_attention_query)):
             indices = conf.test_batch_attention_query[i]
@@ -556,30 +564,25 @@ def test_json(epoch):
     return auc, p_4, pr_x, pr_y, test_result
 
 
-
-
-conf = config.Config()
-os.environ['CUDA_VISIBLE_DEVICES'] = conf.gpu
-conf.load_train_data()
-conf.load_test_data()
-tree = Tree(conf)
-conf.global_num_classes = tree.n_class
-base_model = PCNN_ATT(conf)
-policy = Policy(conf, tree.n_class, base_model)
-policy.cuda()
-
-#policy_optimizer = torch.optim.Adam(policy.parameters(), lr=conf.policy_lr, weight_decay=conf.policy_weight_decay)
-policy_optimizer = torch.optim.SGD(policy.parameters(), lr = conf.policy_lr, weight_decay = conf.policy_weight_decay)
-
-for name,parameters in policy.named_parameters():
-    print(name, parameters.size())
-
-
-criterion = torch.nn.CrossEntropyLoss()
-if conf.is_training :
-    train()
-else:
-    test()
+if __name__ == "__main__":
+    conf = config.Config()
+    os.environ['CUDA_VISIBLE_DEVICES'] = conf.gpu
+    conf.load_train_data()
+    conf.load_test_data()
+    tree = Tree(conf)
+    conf.global_num_classes = tree.n_class
+    base_model = PCNN_ATT(conf)
+    policy = Policy(conf, tree.n_class, base_model)
+    policy.cuda()
+    #policy_optimizer = torch.optim.Adam(policy.parameters(), lr=conf.policy_lr, weight_decay=conf.policy_weight_decay)
+    policy_optimizer = torch.optim.SGD(policy.parameters(), lr = conf.policy_lr, weight_decay = conf.policy_weight_decay)
+    for name,parameters in policy.named_parameters():
+        print(name, parameters.size())
+    criterion = torch.nn.CrossEntropyLoss()
+    if conf.is_training :
+        train()
+    else:
+        test()
 
 
 

@@ -16,6 +16,7 @@ class PCNN_ATT(nn.Module):
 		self.embedding = Embedding(config)
 		self.encoder = PCNN(config)
 		self.selector = Attention(config, config.hidden_size * 3)
+		
 	def forward(self):
 		embedding = self.embedding()
 		sen_embedding = self.encoder(embedding)

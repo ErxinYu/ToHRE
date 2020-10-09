@@ -59,13 +59,13 @@ class Tree:
         self.conf.global_num_classes = len(self.p2c_idx)
         self.n_update = 0
         self.cur_epoch = 0
+
     def pad_p2c_idx(self): #构造p2c_idx_np
         col = max([len(c) for c in self.p2c_idx.values()]) #col是含有子节点最多的个数。 可以直接+1，因为这里的allow_up没用了
         res = np.zeros((len(self.p2c_idx), col), dtype=int) #[104,25]
         for row_i in range(len(self.p2c_idx)):
             res[row_i, :len(self.p2c_idx[row_i])] = self.p2c_idx[row_i]
         return res
-
 
     def p2c_batch(self, ids):#输入标签id，返回标签id的子标签+标签id
         # ids is virtual
@@ -91,7 +91,6 @@ class Tree:
                 if len(next_true[did][c]) == 0:
                     next_true[did][c].append(c)#如果没有子标签在当前文档标签中，就添加当前标签。
         return next_true_bin, next_true#构造
-
 
     def get_next(self, cur_class_batch, next_classes_batch, bag_ids):#详细介绍
         assert len(cur_class_batch) == len(bag_ids)
@@ -121,7 +120,6 @@ class Tree:
                     next_class_batch_pred.append(next_class)
 
         return np.array(indices), np.array(next_class_batch_pred)
-
 
     def get_next_by_probs(self, conf, cur_class_batch, next_classes_batch, bag_ids, probs, indices, cur_step):
         assert len(cur_class_batch) == len(bag_ids)  == len(probs)

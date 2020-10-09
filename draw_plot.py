@@ -6,7 +6,7 @@ import numpy as np
 import sys
 import os
 
-result_dir = './test_result/'
+result_dir = './test_result/baseline/'
 
 def main():
         models = sys.argv[1:]

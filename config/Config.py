@@ -21,15 +21,18 @@ class Accuracy(object):
 	def __init__(self):
 		self.correct = 0
 		self.total = 0
+
 	def add(self, is_correct):
 		self.total += 1
 		if is_correct:
 			self.correct += 1
+
 	def get(self):
 		if self.total == 0:
 			return 0.0
 		else:
 			return float(self.correct) / self.total
+			
 	def clear(self):
 		self.correct = 0
 		self.total = 0 
@@ -39,28 +42,26 @@ class Config(object):
 		self.acc_NA_global = Accuracy()
 		self.acc_not_NA_global = Accuracy()
 		self.acc_total_global = Accuracy()
-		self.data_path = './data/57K-joined'
+		self.data_path = './data/57K-unjoined'
 		self.use_bag = True
 		self.use_gpu = True
 		self.max_length = 120
 		self.pos_num = 2 * self.max_length
 		self.flat_num_classes = 53
-		self.hidden_size = 300
 		self.pos_size = 5
-		self.max_epoch = 200
+		self.max_epoch = 50
 		self.opt_method = 'SGD'
 		self.optimizer = None
 		self.base_model_lr =  0.5
 		self.base_model_weight_decay = 1e-5
 
 		self.checkpoint_dir = './checkpoint'
-		self.test_result_dir = './test_result'
+		self.test_result_dir = './test_result/'
 		self.save_epoch = 1
 		self.test_epoch = 1
 		self.pretrain_model = None
 		self.trainModel = None
 		self.testModel = None
-		self.train_batch_size = 160
 		self.test_batch_size = 160 
 		self.word_size = 50
 		self.window_size = 3
@@ -73,7 +74,7 @@ class Config(object):
 		self.acc_not_NA_local_layer2 = Accuracy()
 		self.acc_total_local = Accuracy()
 
-		self.class_embed_size = 50
+		
 		self.use_l2 = True
 		self.policy_weight_decay = 1e-5
 		self.n_layers = 3
@@ -85,18 +86,22 @@ class Config(object):
 		self.global_num_classes = 95
 
 		self.is_training = True
+		self.train_batch_size = 160
+		self.class_embed_size = 50
 		self.policy_lr = 0.5
 		self.policy_drop_prob = 0.5
 		self.global_ratio = 0
-		self.use_label_weight = False
+		self.use_label_weight = True
 		self.base_model_drop_prob = 0
-		self.out_model_name = "HRE_57K-unjoined-v2"
+		self.out_model_name = "HRE_57K-unjoined_1" #v3 v4 区别是一个 一个是往高了转，一个往低了转。
 		self.l1_size = 400
+		self.hidden_size = 300
 		self.gpu = "1"
 
 
 		print("-------config--------")
 		print("is_training", self.is_training)
+		print("train_batch_size", self.train_batch_size)
 		print("policy_lr", self.policy_lr)
 		print("use dataset", self.data_path)
 		print("hidden_size", self.hidden_size)
@@ -106,15 +111,17 @@ class Config(object):
 		print("gpu", self.gpu, "\n\n")
 
 	def set_train_model(self, model):
-		self.trainModel = model			 
+		self.trainModel = model		
+
 	def set_test_model(self, model):
 		self.testModel = model
+
 	def load_train_data(self):
 		print("Reading training data...")
 		self.data_word_vec = np.load(os.path.join(self.data_path, 'vec.npy'))
-		#self.data_train_h_entity_word = np.load(os.path.join(self.data_path, 'train_h_entity_word.npy'))
-		#self.data_train_t_entity_word = np.load(os.path.join(self.data_path, 'train_t_entity_word.npy'))
-		
+		self.data_train_h_entity_word = np.load(os.path.join(self.data_path, 'train_h_entity_word.npy'))
+		self.data_train_t_entity_word = np.load(os.path.join(self.data_path, 'train_t_entity_word.npy'))
+
 		self.layer2_100 = np.load(os.path.join(self.data_path, 'layer2_100.npy'))
 		self.layer2_200 = np.load(os.path.join(self.data_path, 'layer2_200.npy'))
 		self.layer2_100 = set(self.layer2_100)
@@ -135,7 +142,7 @@ class Config(object):
 			self.train_batches += 1
 		self.train_batches = int(self.train_batches)	
 		print(len(self.train_hierarchical_bag_label), self.train_hierarchical_bag_label[0])
-		print("Finish reading training data")
+		#print("Finish reading training data")
 		self.label_weight_all = defaultdict(int)
 		self.label_weight_one = defaultdict(int)
 
@@ -144,7 +151,7 @@ class Config(object):
 				self.label_weight_all[h_bag_label[layer]] += 1
 				if 1 in h_bag_label:
 					break
-		print(self.label_weight_all)
+		#print(self.label_weight_all)
 
 
 		for i in self.label_weight_all:
@@ -156,18 +163,16 @@ class Config(object):
 				self.label_weight_all[i] = 0
 			self.label_weight.append(self.label_weight_all[i])
 		self.label_weight = torch.from_numpy(np.array(self.label_weight)).cuda().float()
-		print("-"*20, self.label_weight_all[0], "-"*20)
-		print(self.label_weight_all)
-		print(self.label_weight)
-
-
+		#print("-"*20, self.label_weight_all[0], "-"*20)
+		#print(self.label_weight_all)
+		#print(self.label_weight)
 
 	def load_test_data(self):
 		print("Reading testing data...")
 		self.data_word_vec = np.load(os.path.join(self.data_path, 'vec.npy'))
 
-		#self.data_test_h_entity_word = np.load(os.path.join(self.data_path, 'test_h_entity_word.npy'))
-		#self.data_test_t_entity_word = np.load(os.path.join(self.data_path, 'test_t_entity_word.npy'))
+		self.data_test_h_entity_word = np.load(os.path.join(self.data_path, 'test_h_entity_word.npy'))
+		self.data_test_t_entity_word = np.load(os.path.join(self.data_path, 'test_t_entity_word.npy'))
 		self.data_test_hierarchical_label = np.load(os.path.join(self.data_path, 'test_hierarchical_bag_label.npy'))
 		self.data_test_word = np.load(os.path.join(self.data_path, 'test_word.npy'))
 		self.data_test_pos1 = np.load(os.path.join(self.data_path, 'test_pos1.npy'))
@@ -175,6 +180,7 @@ class Config(object):
 		self.data_test_mask = np.load(os.path.join(self.data_path, 'test_mask.npy'))
 		self.data_test_label = np.load(os.path.join(self.data_path, 'test_bag_label.npy'))
 		self.data_test_scope = np.load(os.path.join(self.data_path, 'test_bag_scope.npy'))
+		self.re_bag_id = np.load(os.path.join(self.data_path, 're_bag_id.npy'))
 		self.test_order = list(range(len(self.data_test_label)))
 		self.test_batches = len(self.data_test_label) / self.test_batch_size
 
@@ -198,8 +204,9 @@ class Config(object):
 		
 		if len(self.data_test_label) % self.test_batch_size != 0:
 			self.test_batches += 1
-		print("data_test_label", len(self.data_test_label))
+		#print("data_test_label", len(self.data_test_label))
 		self.total_recall = len(np.nonzero(self.data_test_label)[0])
+		print("self.total_recall", self.total_recall)
 		self.test_batches = int(self.test_batches)
 		print("Finish reading testing data")
 
@@ -213,8 +220,8 @@ class Config(object):
 		#print("index", len(index))
 		self.batch_scope = scope
 
-		#self.batch_h_entity_word = self.data_train_h_entity_word[index, :]
-		#self.batch_t_entity_word = self.data_train_t_entity_word[index, :]
+		self.batch_h_entity_word = self.data_train_h_entity_word[index, :]
+		self.batch_t_entity_word = self.data_train_t_entity_word[index, :]
 
 		self.batch_word = self.data_train_word[index, :]
 		self.batch_pos1 = self.data_train_pos1[index, :]
@@ -234,8 +241,8 @@ class Config(object):
 			scope.append(scope[len(scope) - 1] + num[1] - num[0] + 1)
 		#print("index", len(index))
 
-		#self.batch_h_entity_word = self.data_test_h_entity_word[index, :]
-		#self.batch_t_entity_word = self.data_test_t_entity_word[index, :]
+		self.batch_h_entity_word = self.data_test_h_entity_word[index, :]
+		self.batch_t_entity_word = self.data_test_t_entity_word[index, :]
 
 		self.batch_word = self.data_test_word[index, :]
 		self.batch_pos1 = self.data_test_pos1[index, :]
@@ -244,10 +251,11 @@ class Config(object):
 		self.batch_scope = scope
 		self.bag_ids = self.test_order[batch * self.test_batch_size : (batch + 1) * self.test_batch_size]	
 		return len(index)	
+
 	def train_one_step(self):
 
-		#self.trainModel.embedding.h_entity_word = to_var(self.batch_h_entity_word)
-		#self.trainModel.embedding.t_entity_word = to_var(self.batch_t_entity_word)
+		self.trainModel.embedding.h_entity_word = to_var(self.batch_h_entity_word)
+		self.trainModel.embedding.t_entity_word = to_var(self.batch_t_entity_word)
 
 
 		self.trainModel.embedding.word = to_var(self.batch_word)
@@ -260,6 +268,9 @@ class Config(object):
 		self.trainModel.encoder.attention_query = to_var(self.batch_attention_query)
 
 	def test_one_step(self):
+
+		self.testModel.embedding.h_entity_word = to_var(self.batch_h_entity_word)
+		self.testModel.embedding.t_entity_word = to_var(self.batch_t_entity_word)
 
 		self.testModel.embedding.word = to_var(self.batch_word)
 		self.testModel.embedding.pos1 = to_var(self.batch_pos1)
@@ -295,6 +306,7 @@ class Config(object):
 		auc = sklearn.metrics.auc(x = pr_x, y = pr_y)
 		print("auc_flat: ", auc)
 		return auc, pr_x, pr_y
+
 	def test(self):
 		best_epoch = None
 		best_auc = 0.0

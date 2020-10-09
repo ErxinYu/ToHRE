@@ -20,9 +20,10 @@ class PCNN(nn.Module):
 		x = self.cnn(embedding) #[241,300,120,1]
 		# print("encoder cnn x", x.size())
 		x = self.pooling(x, self.mask, self.config.hidden_size) #[241, 690]
-		# print("encoder pooling x", x.size())
+		#print("encoder pooling x", x.size())
 		x = self.activation(x)
 		x = self.dropout(x)
+		#exit()
 		return x
 class _CNN(nn.Module):
 	def __init__(self, config):
@@ -31,7 +32,7 @@ class _CNN(nn.Module):
 		self.in_channels = 1
 		self.in_height = self.config.max_length #120
 		self.in_width = self.config.word_size + 2 * self.config.pos_size #60
-		self.kernel_size = (self.config.window_size, self.in_width) #（3, 60）
+		self.kernel_size = (self.config.window_size, 105) #（3, 60）
 		self.out_channels = self.config.hidden_size
 		self.stride = (1, 1)
 		self.padding = (1, 0)
