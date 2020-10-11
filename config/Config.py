@@ -90,13 +90,13 @@ class Config(object):
 		self.class_embed_size = 50
 		self.policy_lr = 0.5
 		self.policy_drop_prob = 0.5
-		self.global_ratio = 0
+		self.global_ratio = 0.5
 		self.use_label_weight = True
 		self.base_model_drop_prob = 0
-		self.out_model_name = "HRE_57K-unjoined_1" #v3 v4 区别是一个 一个是往高了转，一个往低了转。
+		self.out_model_name = "HRE_flat" #v3 v4 区别是一个 一个是往高了转，一个往低了转。
 		self.l1_size = 400
 		self.hidden_size = 300
-		self.gpu = "1"
+		self.gpu = "0"
 
 
 		print("-------config--------")
@@ -228,6 +228,10 @@ class Config(object):
 		self.batch_pos2 = self.data_train_pos2[index, :]
 		self.batch_mask = self.data_train_mask[index, :]
 		self.batch_attention_query = self.train_hierarchical_ins_label[index, :]
+		self.batch_attention_query_flat = self.data_query_label[index]
+		# print("index", len(index), index[0])
+		# print("batch_attention_query_flat", self.batch_attention_query_flat[0], len(self.batch_attention_query_flat))
+		# exit()
 		self.bag_ids = self.train_order[batch * self.train_batch_size : (batch + 1) * self.train_batch_size]	
 		self.batch_label = np.take(self.data_train_label, self.train_order[batch * self.train_batch_size : (batch + 1) * self.train_batch_size], axis = 0)
 		return len(index)
@@ -265,6 +269,7 @@ class Config(object):
 		self.trainModel.encoder.bag_ids = self.bag_ids
 		self.trainModel.selector.scope = self.batch_scope
 		self.trainModel.selector.attention_query = to_var(self.batch_attention_query)
+		self.trainModel.selector.attention_query_flat = to_var(self.batch_attention_query_flat)
 		self.trainModel.encoder.attention_query = to_var(self.batch_attention_query)
 
 	def test_one_step(self):
@@ -289,7 +294,10 @@ class Config(object):
 			batch_score = self.test_one_step()
 			test_score = test_score + batch_score
 		test_result = []
+		print("test_score", len(test_score))
 		for i in range(len(test_score)):
+			if i in self.re_bag_id:
+				continue
 			for j in range(1, len(test_score[i])):
 				tup = (self.test_bag_key_dict[i][0], self.test_bag_key_dict[i][1], j)
 				ans = int(tup in self.test_entity_triple)

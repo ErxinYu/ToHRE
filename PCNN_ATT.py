@@ -16,12 +16,18 @@ class PCNN_ATT(nn.Module):
 		self.embedding = Embedding(config)
 		self.encoder = PCNN(config)
 		self.selector = Attention(config, config.hidden_size * 3)
-		
+
 	def forward(self):
 		embedding = self.embedding()
 		sen_embedding = self.encoder(embedding)
 		logits_layers, logits_total, flat_probs = self.selector(sen_embedding)
 		return logits_layers, logits_total, flat_probs
+
+	def forward_flat(self):
+		embedding = self.embedding()
+		sen_embedding = self.encoder(embedding)
+		logits = self.selector.forward_flat(sen_embedding)
+		return logits
 
 	def test_flat(self):
 		embedding = self.embedding()

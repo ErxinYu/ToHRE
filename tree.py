@@ -48,8 +48,8 @@ class Tree:
             self.test_hierarchical_bag_multi_label_temp = json.load(file)
             self.test_hierarchical_bag_multi_label = {}
             for bag_id in self.test_hierarchical_bag_multi_label_temp:
-                self.test_hierarchical_bag_multi_label[int(bag_id)] = self.test_hierarchical_bag_multi_label_temp[bag_id] 
-        
+                self.test_hierarchical_bag_multi_label[int(bag_id)] = self.test_hierarchical_bag_multi_label_temp[bag_id] #96867
+
         with open(self.conf.data_path + "/relation_id2h_relation_id.json", "r") as file:
             self.relation_id2h_relation_id = json.load(file)
 
@@ -87,7 +87,6 @@ class Tree:
                         next_true[did][c].append(next_c)#key是当前文档id，value是一个dict, {"cur_label"：[34，55]} 如果已经在当前标签中，添加标签的子标签
                     else:
                         next_true_bin[did][c].append(0)
-                # if lowest label 我觉得这个可以不用 (在我们的项目中，标签比较均衡，留着好像也没事) 
                 if len(next_true[did][c]) == 0:
                     next_true[did][c].append(c)#如果没有子标签在当前文档标签中，就添加当前标签。
         return next_true_bin, next_true#构造

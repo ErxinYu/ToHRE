@@ -33,9 +33,9 @@ def calc_sl_loss(probs, update=True):
 def forward_step_sl():#详细介绍
 
     # TODO can reuse logits
-    logits_layers, logits_total, flat_probs = policy.base_model()#logits_layers: tensor( laye_0‘s (batch, 690), laye_1‘s (batch, 690),laye_2‘s (batch, 690))
     if conf.global_ratio > 0:
-        global_loss = calc_sl_loss(flat_probs, update=False)#一个tensor单值 在论文中就是flat_loss
+        flat_probs = policy.base_model.forward_flat()
+        global_loss = calc_sl_loss(flat_probs, update=False) #一个tensor单值 在论文中就是flat_loss
     else:
         flat_probs = None
         global_loss = 0
@@ -43,7 +43,8 @@ def forward_step_sl():#详细介绍
     if conf.flat_probs_only:
         policy.sl_loss = global_loss
         return global_loss, flat_probs
-
+        
+    logits_layers, logits_total, flat_probs = policy.base_model()#logits_layers: tensor( laye_0‘s (batch, 690), laye_1‘s (batch, 690),laye_2‘s (batch, 690))
     policy.bag_vec_layer0 = logits_layers[0]
     policy.bag_vec_layer1 = logits_layers[1]
     policy.bag_vec_layer2 = logits_layers[2]
@@ -160,9 +161,12 @@ def train():
         print("\ntrain:predict_label2num", conf.predict_label2num, "pred_not_na", conf.pred_not_na)
         if epoch % conf.save_epoch == 0:
             print('Train Epoch ' + str(epoch) + ' has finished')
-            test_epoch_by_all(epoch)
             print('Saving model...\n')
             torch.save(policy.state_dict(), "./checkpoint/" + conf.out_model_name + "_epoch_" + str(epoch))
+            #test_epoch_by_all(epoch)
+            conf.set_test_model(policy.base_model)
+            conf.test_one_epoch()
+
     print("Finish training")
     print("Best epoch = %d | auc = %f" % (best_epoch, best_auc))
     print("Storing best result...")

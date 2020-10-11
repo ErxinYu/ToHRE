@@ -168,9 +168,15 @@ class Policy(nn.Module):
                 # print("loss", loss, loss.size())
                 # loss = self.criterion_all(probs, y_true)
                 # print("loss", loss, loss.size())
+
                 loss = self.criterion_all(probs, y_true)
-                # print("loss", loss, (loss * cur_size / cur_batch_size), self.conf.cur_layer)
                 self.sl_loss += (loss * cur_size / cur_batch_size)
+                
+                # if conf.cur_layer == 0:  
+                #     self.sl_loss += 0.5 * (loss * cur_size / cur_batch_size)
+                # else :
+                #     self.sl_loss += (loss * cur_size / cur_batch_size)
+
                 #self.sl_loss += loss
 
         return torch.softmax(probs, dim=1)
