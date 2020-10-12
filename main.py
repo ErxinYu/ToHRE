@@ -43,7 +43,7 @@ def forward_step_sl():#详细介绍
     if conf.flat_probs_only:
         policy.sl_loss = global_loss
         return global_loss, flat_probs
-        
+
     logits_layers, logits_total, flat_probs = policy.base_model()#logits_layers: tensor( laye_0‘s (batch, 690), laye_1‘s (batch, 690),laye_2‘s (batch, 690))
     policy.bag_vec_layer0 = logits_layers[0]
     policy.bag_vec_layer1 = logits_layers[1]
@@ -163,9 +163,7 @@ def train():
             print('Train Epoch ' + str(epoch) + ' has finished')
             print('Saving model...\n')
             torch.save(policy.state_dict(), "./checkpoint/" + conf.out_model_name + "_epoch_" + str(epoch))
-            #test_epoch_by_all(epoch)
-            conf.set_test_model(policy.base_model)
-            conf.test_one_epoch()
+            test_epoch_by_all(epoch)
 
     print("Finish training")
     print("Best epoch = %d | auc = %f" % (best_epoch, best_auc))
@@ -199,7 +197,6 @@ def test_epoch_by_all(epoch):
         conf.acc_total_global.clear()
         conf.testModel = policy.base_model
         auc, pr_x, pr_y = conf.test_one_epoch()
-        print("auc_flat:", auc)
     if conf.flat_probs_only:
         return
 
@@ -329,7 +326,7 @@ def test():
     best_test_result = None
 
     #epochs = range(1，10)
-    epochs = [14]
+    epochs = [conf.test_epoch]
     for epoch in epochs:
         auc, p_4, p, r, test_result = test_json(epoch) 
         if auc > best_auc:

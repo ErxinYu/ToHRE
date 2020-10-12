@@ -85,21 +85,23 @@ class Config(object):
 		self.pred_not_na = 0
 		self.global_num_classes = 95
 
-		self.is_training = True
+		self.is_training = False
+		self.test_epoch = 25
 		self.train_batch_size = 160
 		self.class_embed_size = 50
 		self.policy_lr = 0.5
 		self.policy_drop_prob = 0.5
-		self.global_ratio = 0.5
+		self.global_ratio = 0.1
 		self.use_label_weight = True
 		self.base_model_drop_prob = 0
 		self.out_model_name = "HRE_flat" #v3 v4 区别是一个 一个是往高了转，一个往低了转。
 		self.l1_size = 400
 		self.hidden_size = 300
-		self.gpu = "0"
+		self.gpu = "1"
 
 
 		print("-------config--------")
+		print("")
 		print("is_training", self.is_training)
 		print("train_batch_size", self.train_batch_size)
 		print("policy_lr", self.policy_lr)
