@@ -54,6 +54,8 @@ class Config(object):
 		self.optimizer = None
 		self.base_model_lr =  0.5
 		self.base_model_weight_decay = 1e-5
+		self.base_model_drop_prob = 0.5
+
 
 		self.checkpoint_dir = './checkpoint'
 		self.test_result_dir = './test_result/'
@@ -76,7 +78,6 @@ class Config(object):
 
 		
 		self.use_l2 = True
-		self.policy_weight_decay = 1e-5
 		self.n_layers = 3
 		self.flat_probs_only = False
 		self.cur_layer = 0
@@ -85,23 +86,23 @@ class Config(object):
 		self.pred_not_na = 0
 		self.global_num_classes = 95
 
-		self.is_training = False
-		self.test_epoch = 25
+		self.is_training = True
+		self.test_epoch = 21
 		self.train_batch_size = 160
 		self.class_embed_size = 50
 		self.policy_lr = 0.5
-		self.policy_drop_prob = 0.5
-		self.global_ratio = 0.1
-		self.use_label_weight = True
-		self.base_model_drop_prob = 0
-		self.out_model_name = "HRE_flat" #v3 v4 区别是一个 一个是往高了转，一个往低了转。
+		self.policy_drop_prob = 0
+		self.policy_weight_decay = 1e-5
+		self.global_ratio = 0
+		self.use_label_weight = False
+		self.out_model_name = "HRE" 
 		self.l1_size = 400
 		self.hidden_size = 300
 		self.gpu = "1"
 
 
 		print("-------config--------")
-		print("")
+		print("HRE最正版本+两个dropout测试")
 		print("is_training", self.is_training)
 		print("train_batch_size", self.train_batch_size)
 		print("policy_lr", self.policy_lr)
@@ -285,8 +286,7 @@ class Config(object):
 		self.testModel.encoder.mask = to_var(self.batch_mask)
 		self.testModel.selector.scope = self.batch_scope
 		self.testModel.selector.test_attention_query = to_var(self.test_batch_attention_query).long()
-		if self.global_ratio >0 :
-			return self.testModel.test_flat()
+		return self.testModel.test_flat()
 
 	def test_one_epoch(self):
 		print("Test flat model...")

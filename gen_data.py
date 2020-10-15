@@ -255,7 +255,7 @@ def init(file_name, word_vec_file_name, rel2id_file_name, max_length = 120, case
             else:
                 sen_mask[i][j] = [0, 0, 100]    
         # bag_scope     
-        tup = (sen['head']['id'], sen['tail']['id'], sen['relation'])
+        tup = (sen['head']['id'], sen['tail']['id'], sen_label[i])
 
         if bag_key == [] or bag_key[len(bag_key) - 1] != tup:
             bag_key.append(tup)

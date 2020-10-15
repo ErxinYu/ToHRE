@@ -32,17 +32,15 @@ def calc_sl_loss(probs, update=True):
 
 def forward_step_sl():#详细介绍
 
-    # TODO can reuse logits
-    if conf.global_ratio > 0:
+    # TODO can reuse logits 
+    if conf.flat_probs_only:
         flat_probs = policy.base_model.forward_flat()
         global_loss = calc_sl_loss(flat_probs, update=False) #一个tensor单值 在论文中就是flat_loss
+        policy.sl_loss = global_loss
+        return global_loss, flat_probs
     else:
         flat_probs = None
         global_loss = 0
-    
-    if conf.flat_probs_only:
-        policy.sl_loss = global_loss
-        return global_loss, flat_probs
 
     logits_layers, logits_total, flat_probs = policy.base_model()#logits_layers: tensor( laye_0‘s (batch, 690), laye_1‘s (batch, 690),laye_2‘s (batch, 690))
     policy.bag_vec_layer0 = logits_layers[0]
@@ -98,7 +96,6 @@ def forward_step_sl():#详细介绍
                 elif y_pred == 1:
                     conf.acc_NA_local.add(y_pred in y_true)
     #policy.sl_loss /= conf.n_steps# n_steps=17 不知道这里为什么取17
-    # exit()
     policy.sl_loss = (1 - conf.global_ratio) * policy.sl_loss + conf.global_ratio * global_loss
     return global_loss, flat_probs
 
@@ -191,13 +188,12 @@ def test_epoch_by_all(epoch):
     conf.acc_total_local.clear()
     
     #test global model for comparation
-    if conf.global_ratio > 0 :
+    if conf.flat_probs_only:
         conf.acc_NA_global.clear()
         conf.acc_not_NA_global.clear()
         conf.acc_total_global.clear()
         conf.testModel = policy.base_model
         auc, pr_x, pr_y = conf.test_one_epoch()
-    if conf.flat_probs_only:
         return
 
     predict_label2num = defaultdict(int)
@@ -492,7 +488,6 @@ def test_json(epoch):
             if (set(y_true) & set(bag_id_prob_20)):
                 lt_bag_200_hits_20 += 1
                 lt_200_predict_20_dict[max(y_true)] += 1
-            print("\n\n")
 
     print("lt_label_100_dict", lt_label_100_dict)
     print("lt_label_200_dict", lt_label_200_dict)
@@ -575,8 +570,9 @@ if __name__ == "__main__":
     base_model = PCNN_ATT(conf)
     policy = Policy(conf, tree.n_class, base_model)
     policy.cuda()
-    #policy_optimizer = torch.optim.Adam(policy.parameters(), lr=conf.policy_lr, weight_decay=conf.policy_weight_decay)
+    #base_model_optimizer = torch.optim.SGD(base_model.parameters(), lr=conf.base_model_lr, weight_decay=conf.base_model_weight_decay)
     policy_optimizer = torch.optim.SGD(policy.parameters(), lr = conf.policy_lr, weight_decay = conf.policy_weight_decay)
+    
     for name,parameters in policy.named_parameters():
         print(name, parameters.size())
     criterion = torch.nn.CrossEntropyLoss()
