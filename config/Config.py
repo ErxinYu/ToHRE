@@ -39,24 +39,18 @@ class Accuracy(object):
 
 class Config(object):
 	def __init__(self):
+		#ACC
+		self.acc_NA_local = Accuracy()
+		self.acc_not_NA_local_layer0 = Accuracy()
+		self.acc_not_NA_local_layer1 = Accuracy()
+		self.acc_not_NA_local_layer2 = Accuracy()
+		self.acc_total_local = Accuracy()
+
+		#PCNN 参数
 		self.acc_NA_global = Accuracy()
 		self.acc_not_NA_global = Accuracy()
 		self.acc_total_global = Accuracy()
 		self.data_path = './data/57K-unjoined'
-		self.use_bag = True
-		self.use_gpu = True
-		self.max_length = 120
-		self.pos_num = 2 * self.max_length
-		self.flat_num_classes = 53
-		self.pos_size = 5
-		self.max_epoch = 50
-		self.opt_method = 'SGD'
-		self.optimizer = None
-		self.base_model_lr =  0.5
-		self.base_model_weight_decay = 1e-5
-		self.base_model_drop_prob = 0.5
-
-
 		self.checkpoint_dir = './checkpoint'
 		self.test_result_dir = './test_result/'
 		self.save_epoch = 1
@@ -65,44 +59,49 @@ class Config(object):
 		self.trainModel = None
 		self.testModel = None
 		self.test_batch_size = 160 
+		self.epoch_range = None
+		self.max_length = 120
 		self.word_size = 50
 		self.window_size = 3
-		self.epoch_range = None
-	
-		##new
-		self.acc_NA_local = Accuracy()
-		self.acc_not_NA_local_layer0 = Accuracy()
-		self.acc_not_NA_local_layer1 = Accuracy()
-		self.acc_not_NA_local_layer2 = Accuracy()
-		self.acc_total_local = Accuracy()
+		self.pos_num = 2 * self.max_length
+		self.flat_num_classes = 53
+		self.pos_size = 5
+		self.max_epoch = 50
+		self.opt_method = 'SGD'
+		#可变的
+		self.hidden_size = 230
+		self.base_model_lr =  0.1
+		self.base_model_weight_decay = 1e-5
+		self.base_model_drop_prob = 0.5
 
-		
+		# model参数
 		self.use_l2 = True
 		self.n_layers = 3
-		self.flat_probs_only = False
 		self.cur_layer = 0
 		self.local_loss = 0
 		self.predict_label2num = defaultdict(int)
 		self.pred_not_na = 0
 		self.global_num_classes = 95
+		## 可变的
+		self.policy_lr = 0.5
+		self.policy_drop_prob = 0.5
+		self.policy_weight_decay = 1e-5
+		self.use_label_weight = False
+		self.l1_size = 400
 
+		#总的参数
 		self.is_training = True
 		self.test_epoch = 21
+		self.flat_probs_only = True
 		self.train_batch_size = 160
 		self.class_embed_size = 50
-		self.policy_lr = 0.5
-		self.policy_drop_prob = 0
-		self.policy_weight_decay = 1e-5
 		self.global_ratio = 0
-		self.use_label_weight = False
 		self.out_model_name = "HRE" 
-		self.l1_size = 400
-		self.hidden_size = 300
 		self.gpu = "1"
 
 
 		print("-------config--------")
-		print("HRE最正版本+两个dropout测试")
+		print("HRE_falt 学习率0.1")
 		print("is_training", self.is_training)
 		print("train_batch_size", self.train_batch_size)
 		print("policy_lr", self.policy_lr)
