@@ -117,11 +117,7 @@ class Attention(Selector):
 			attention_score = F.softmax(torch.transpose(attention_logit_flat[self.scope[i] : self.scope[i + 1]], 0, 1), 1)
 			final_repre = torch.matmul(attention_score, sen_matrix)
 			logits = self.get_logits(final_repre)
-			# print("logits", logits, logits.size())
 			tower_output.append(torch.diag(F.softmax(logits, 1)))
-			# print("F.softmax(logits, 1))", F.softmax(logits, 1))
-			# print("torch.diag(F.softmax(logits, 1))", torch.diag(F.softmax(logits, 1)))
-			# exit()
 		stack_output = torch.stack(tower_output)
 		return list(stack_output.data.cpu().numpy())
  

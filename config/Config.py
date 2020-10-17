@@ -55,7 +55,6 @@ class Config(object):
 		self.test_result_dir = './test_result/'
 		self.save_epoch = 1
 		self.test_epoch = 1
-		self.pretrain_model = None
 		self.trainModel = None
 		self.testModel = None
 		self.test_batch_size = 160 
@@ -69,10 +68,14 @@ class Config(object):
 		self.max_epoch = 50
 		self.opt_method = 'SGD'
 		#可变的
-		self.hidden_size = 230
-		self.base_model_lr =  0.1
+		self.flat_probs_only = False
+		self.pretrain_epoch = 5 # -1==false
+		self.pretrain_model_name = "HRE_flat"
+		self.hidden_size = 300
+		self.base_model_lr =  0.5
 		self.base_model_weight_decay = 1e-5
-		self.base_model_drop_prob = 0.5
+		self.base_model_drop_prob = 0
+		
 
 		# model参数
 		self.use_l2 = True
@@ -82,6 +85,7 @@ class Config(object):
 		self.predict_label2num = defaultdict(int)
 		self.pred_not_na = 0
 		self.global_num_classes = 95
+		self.class_embed_size = 50
 		## 可变的
 		self.policy_lr = 0.5
 		self.policy_drop_prob = 0.5
@@ -91,17 +95,15 @@ class Config(object):
 
 		#总的参数
 		self.is_training = True
-		self.test_epoch = 21
-		self.flat_probs_only = True
+		self.test_epoch = 10
 		self.train_batch_size = 160
-		self.class_embed_size = 50
 		self.global_ratio = 0
 		self.out_model_name = "HRE" 
 		self.gpu = "1"
 
 
 		print("-------config--------")
-		print("HRE_falt 学习率0.1")
+		print("HRE+5 epoch pretrain 300")
 		print("is_training", self.is_training)
 		print("train_batch_size", self.train_batch_size)
 		print("policy_lr", self.policy_lr)

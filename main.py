@@ -118,8 +118,18 @@ def train():
     best_r = None
     best_epoch = 0
     num_delete_bag = 0
-    #"./checkpoint/" + conf.out_model_name + "_epoch_" + str(epoch)
-    #policy.load_state_dict(torch.load("./checkpoint/" + conf.out_model_name + "_epoch_" + str(4)))  
+    if conf.pretrain_epoch != -1:
+        model_file = "./checkpoint/" + conf.pretrain_model_name + "_epoch_" +str(conf.pretrain_epoch)
+        policy.load_state_dict(torch.load(model_file))
+        policy.eval()
+        conf.set_test_model(policy.base_model)
+        conf.acc_NA_global.clear()
+        conf.acc_not_NA_global.clear()
+        conf.acc_total_global.clear()
+        conf.testModel = policy.base_model
+        auc, pr_x, pr_y = conf.test_one_epoch()
+        print("auc_flat:", auc)
+
     for epoch in range(1, conf.max_epoch + 1):
         conf.is_training = True
         policy.train()
@@ -158,9 +168,13 @@ def train():
         print("\ntrain:predict_label2num", conf.predict_label2num, "pred_not_na", conf.pred_not_na)
         if epoch % conf.save_epoch == 0:
             print('Train Epoch ' + str(epoch) + ' has finished')
-            print('Saving model...\n')
-            torch.save(policy.state_dict(), "./checkpoint/" + conf.out_model_name + "_epoch_" + str(epoch))
             test_epoch_by_all(epoch)
+            print('Saving model...')
+            if conf.flat_probs_only:
+                torch.save(policy.state_dict(), "./checkpoint/" + conf.pretrain_model_name + "_epoch_" + str(epoch))                
+            else:
+                torch.save(policy.state_dict(), "./checkpoint/" + conf.out_model_name + "_epoch_" + str(epoch))
+            
 
     print("Finish training")
     print("Best epoch = %d | auc = %f" % (best_epoch, best_auc))
@@ -320,6 +334,20 @@ def test():
     best_r = None
     best_p_4 = 0
     best_test_result = None
+
+    if conf.flat_probs_only:
+        model_file = "./checkpoint/" + conf.out_model_name + "_epoch_" +str(conf.test_epoch)
+        print('Test local: test_epoch_by_all model  ' + model_file)
+        policy.load_state_dict(torch.load(model_file))  
+        policy.eval()
+        conf.set_test_model(policy.base_model)
+        conf.acc_NA_global.clear()
+        conf.acc_not_NA_global.clear()
+        conf.acc_total_global.clear()
+        conf.testModel = policy.base_model
+        auc, pr_x, pr_y = conf.test_one_epoch()
+        print("auc_flat:", auc)
+        return
 
     #epochs = range(1，10)
     epochs = [conf.test_epoch]
