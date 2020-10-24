@@ -32,7 +32,7 @@ class _CNN(nn.Module):
 		self.in_channels = 1
 		self.in_height = self.config.max_length #120
 		self.in_width = self.config.word_size + 2 * self.config.pos_size #60
-		self.kernel_size = (self.config.window_size, 105) #（3, 60/105）
+		self.kernel_size = (self.config.window_size, 60) #（3, 60/105）
 		self.out_channels = self.config.hidden_size
 		self.stride = (1, 1)
 		self.padding = (1, 0)

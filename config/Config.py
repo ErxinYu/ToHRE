@@ -69,8 +69,8 @@ class Config(object):
 		self.opt_method = 'SGD'
 		#可变的
 		self.flat_probs_only = False
-		self.pretrain_epoch = 5 # -1==false
-		self.pretrain_model_name = "HRE_flat"
+		self.pretrain_epoch = -1 # -1==false
+		self.pretrain_model_name = "HRE_flat_wo_ew"
 		self.hidden_size = 300
 		self.base_model_lr =  0.5
 		self.base_model_weight_decay = 1e-5
@@ -95,15 +95,15 @@ class Config(object):
 
 		#总的参数
 		self.is_training = True
-		self.test_epoch = 10
+		self.test_epoch = 4
 		self.train_batch_size = 160
 		self.global_ratio = 0
-		self.out_model_name = "HRE" 
+		self.out_model_name = "HRE_wo_EW" 
 		self.gpu = "1"
 
 
 		print("-------config--------")
-		print("HRE+5 epoch pretrain 300")
+		print("HRE_wo_EW no pretrain")
 		print("is_training", self.is_training)
 		print("train_batch_size", self.train_batch_size)
 		print("policy_lr", self.policy_lr)

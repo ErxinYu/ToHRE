@@ -38,7 +38,7 @@ class Embedding(nn.Module):
 		nn.init.xavier_uniform_(self.pos2_embedding.weight.data)
 		if self.pos2_embedding.padding_idx is not None:
 			self.pos2_embedding.weight.data[self.pos2_embedding.padding_idx].fill_(0)
-	def forward_old(self):
+	def forward(self):
 		word = self.word_embedding(self.word)	#[160,120,50]
 		pos1 = self.pos1_embedding(self.pos1) #[160,120,5]
 		pos2 = self.pos2_embedding(self.pos2) #[160,120,5]
@@ -79,7 +79,7 @@ class Embedding(nn.Module):
 		embedding_t = embedding_t.mul(a2) #[160,120,110]
 		embedding = embedding_h + embedding_t #[160,120,110]
 		return embedding
-	def forward(self):
+	def forward_new(self):
 		
 		word = self.word_embedding(self.word)	#[160,120,50]
 		h_entity_word = self.word_embedding(self.h_entity_word)	#[160,1,50]
