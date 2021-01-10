@@ -70,7 +70,11 @@ class Config(object):
 		#可变的
 		self.flat_probs_only = False
 		self.pretrain_epoch = -1 # -1==false
+<<<<<<< HEAD
 		self.pretrain_model_name = "HRE_flat"
+=======
+		self.pretrain_model_name = "HRE_flat_wo_ew"
+>>>>>>> 746b449cb536e92e95eb6165b4fbecb35d470563
 		self.hidden_size = 300
 		self.base_model_lr =  0.5
 		self.base_model_weight_decay = 1e-5
@@ -94,16 +98,25 @@ class Config(object):
 		self.l1_size = 400
 
 		#总的参数
+<<<<<<< HEAD
 		self.is_training = False
 		self.test_epoch = 5
 		self.train_batch_size = 160
 		self.global_ratio = 0
 		self.out_model_name = "HRE" 
 		self.gpu = "0"
+=======
+		self.is_training = True
+		self.test_epoch = 4
+		self.train_batch_size = 160
+		self.global_ratio = 0
+		self.out_model_name = "HRE_wo_EW" 
+		self.gpu = "1"
+>>>>>>> 746b449cb536e92e95eb6165b4fbecb35d470563
 
 
 		print("-------config--------")
-		print("HRE+5 epoch pretrain 300")
+		print("HRE_wo_EW no pretrain")
 		print("is_training", self.is_training)
 		print("train_batch_size", self.train_batch_size)
 		print("policy_lr", self.policy_lr)

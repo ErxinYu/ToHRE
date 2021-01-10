@@ -275,7 +275,6 @@ def test_epoch_by_all(epoch):
         if bag_id in conf.re_bag_id:
             continue
         for i in range(1, len(conf.test_batch_attention_query)):
-
             indices = conf.test_batch_attention_query[i]
             predict_layer_0_index = str(bag_id) + "_" + str(indices[0])
             predict_layer_1_index = str(bag_id) + "_" + str(indices[1])
@@ -366,10 +365,10 @@ def test():
     print("Storing best result...")
     if not os.path.isdir(conf.test_result_dir):
         os.mkdir(conf.test_result_dir)
-    best_out_file_x = conf.out_model_name + "_best_epoch_" + str(best_epoch) + "_x.npy"
-    best_out_file_y = conf.out_model_name + "_best_epoch_" + str(best_epoch) + "_y.npy"
-    np.save(os.path.join(conf.test_result_dir, best_out_file_x), best_p)
-    np.save(os.path.join(conf.test_result_dir, best_out_file_y), best_r)
+    # best_out_file_x = conf.out_model_name + "_best_epoch_" + str(best_epoch) + "_x.npy"
+    # best_out_file_y = conf.out_model_name + "_best_epoch_" + str(best_epoch) + "_y.npy" 
+    np.save("./test_result/baseline/ToHRE_x.npy", best_p)
+    np.save("./test_result/baseline/ToHRE_y.npy", best_r)
 
     file_name_all = "./test_result/best_epoch_" + str(best_epoch) + "_all" + ".txt"
     file_name_pos = "./test_result/best_epoch_" + str(best_epoch) + "_pos" + ".txt"
