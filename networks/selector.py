@@ -121,24 +121,3 @@ class Attention(Selector):
 		stack_output = torch.stack(tower_output)
 		return list(stack_output.data.cpu().numpy())
  
-	# def test_flat(self, x):
-	# 	attention_logit = self._attention_test_logit(x)	#[all_sen_num, 95]
-	# 	tower_output = []
-	# 	for i in range(len(self.scope) - 1):
-	# 		sen_matrix = x[self.scope[i] : self.scope[i + 1]]
-	# 		attention_score = F.softmax(torch.transpose(attention_logit[self.scope[i] : self.scope[i + 1]], 0, 1), 1) #[96,bag_sen_num]
-	# 		final_repre = torch.matmul(attention_score, sen_matrix) #[95, 690] = [95,bag_sen_num] * [bag_sen_num, 690]
-	# 		total_label_repre = []
-	# 		for i in range(53):
-	# 			each_label_repre = torch.index_select(final_repre, 0, self.test_attention_query[i]).view(1,-1) #[3,690]--> [1,2070]
-	# 			total_label_repre.append(each_label_repre)
-	# 			#print("each_label_repre",each_label_repre.size())
-	# 			#print("total_label_repre",len(total_label_repre), total_label_repre[0].size())
-	# 		stack_repre = torch.stack(total_label_repre) #[53, 1, 2070]
-	# 		stack_repre = torch.squeeze(stack_repre)
-	# 		#print("stack_repre", stack_repre.size())
-	# 		probs = self.get_logits(stack_repre) #[53,53] = [53,2070] * [2070,53]
-	# 		#print("probs", probs, probs.size())
-	# 		tower_output.append(torch.diag(F.softmax(probs, 1))) #[1,53]
-	# 	stack_output = torch.stack(tower_output) #[batch,53]
-	# 	return list(stack_output.data.cpu().numpy())
