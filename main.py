@@ -336,7 +336,7 @@ def test():
     best_test_result = None
 
     if conf.flat_probs_only:
-        model_file = "./checkpoint/" + conf.out_model_name + "_epoch_" +str(conf.test_epoch)
+        model_file = self.checkpoint_dir  + conf.out_model_name + "_epoch_" +str(conf.test_epoch)
         print('Test local: test_epoch_by_all model  ' + model_file)
         policy.load_state_dict(torch.load(model_file))  
         policy.eval()

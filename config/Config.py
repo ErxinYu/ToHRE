@@ -51,7 +51,7 @@ class Config(object):
 		self.acc_not_NA_global = Accuracy()
 		self.acc_total_global = Accuracy()
 		self.data_path = './data/57K-unjoined'
-		self.checkpoint_dir = './checkpoint'
+		self.checkpoint_dir = './checkpoint/0.439_epoch_5'
 		self.test_result_dir = './test_result/'
 		self.save_epoch = 1
 		self.test_epoch = 1
@@ -69,7 +69,7 @@ class Config(object):
 		self.opt_method = 'SGD'
 		#可变的
 		self.flat_probs_only = False
-		self.pretrain_epoch = 5 # -1==false
+		self.pretrain_epoch = -1 # -1==false
 		self.pretrain_model_name = "HRE_flat"
 		self.hidden_size = 300
 		self.base_model_lr =  0.5
@@ -94,12 +94,12 @@ class Config(object):
 		self.l1_size = 400
 
 		#总的参数
-		self.is_training = True
-		self.test_epoch = 10
+		self.is_training = False
+		self.test_epoch = 5
 		self.train_batch_size = 160
 		self.global_ratio = 0
 		self.out_model_name = "HRE" 
-		self.gpu = "1"
+		self.gpu = "0"
 
 
 		print("-------config--------")

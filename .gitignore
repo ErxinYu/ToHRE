@@ -3,3 +3,7 @@ data/
 __pycache__/
 test_result/
 raw_data/
+run.sh 
+gen_data.py
+useful_code.py
+
